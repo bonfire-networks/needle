@@ -82,11 +82,12 @@ defmodule Pointers.Migration do
   end
 
   defp create_pointer_trigger_function() do
+    table_name = schema_pointers_table()
     :ok = execute """
     create or replace function backing_pointer_trigger() returns trigger as $$
     declare table_id uuid;
     begin
-      select id into table_id from pointers_table where pointers_table.table = TG_TABLE_NAME;
+      select id into table_id from #{table_name} where #{table_name}.table = TG_TABLE_NAME;
       if table_id is null then
         raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
       end if;
