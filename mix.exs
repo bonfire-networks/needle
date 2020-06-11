@@ -21,6 +21,7 @@ defmodule Pointers.MixProject do
     [
       {:pointers_ulid, ">= 0.1.2"},
       {:ecto_sql, "~> 3.4"},
+      {:protocol_ex, "~> 0.4.3"},
     ]
   end
 
