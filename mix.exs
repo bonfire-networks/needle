@@ -23,4 +23,13 @@ defmodule Pointers.MixProject do
       {:ecto_sql, "~> 3.4"},
     ]
   end
+
+  def schema_pointers_table do
+    Application.get_env(:pointers, :schema_pointers_table, "pointers_table")
+  end
+
+  def schema_pointers do
+    Application.get_env(:pointers, :schema_pointers, "pointers")
+  end
+
 end

@@ -3,6 +3,7 @@ defmodule Pointers.Migration do
   Migration helpers for creating tables that participate in the pointers abasction.
   """
 
+  import Pointers.MixProject
   import Ecto.Query, only: [from: 2]
   import Ecto.Migration
   alias Pointers.Table
@@ -55,29 +56,29 @@ defmodule Pointers.Migration do
   """
   @spec init_pointers(direction :: :up | :down) :: nil
   def init_pointers(:up) do
-    create table(:pointers_table, primary_key: false) do
+    create table(schema_pointers_table(), primary_key: false) do
       add_pointer_pk()
       add :table, :text, null: false
     end
-    create table(:pointers, primary_key: false) do
+    create table(schema_pointers(), primary_key: false) do
       add_pointer_pk()
-      add :table_id, references(:pointers_table, on_delete: :delete_all, type: :uuid), null: false
+      add :table_id, references(schema_pointers_table(), on_delete: :delete_all, type: :uuid), null: false
     end
-    create unique_index(:pointers_table, :table)
-    create index(:pointers, :table_id)
+    create unique_index(schema_pointers_table(), :table)
+    create index(schema_pointers(), :table_id)
     flush()
-    insert_table_record(Table.table_id(), :pointers_table)
+    insert_table_record(Table.table_id(), schema_pointers_table())
     create_pointer_trigger_function()
-    create_pointer_trigger(:pointers_table)
+    create_pointer_trigger(schema_pointers_table())
   end
 
   def init_pointers(:down) do
-    drop_pointer_trigger(:pointers_table)
+    drop_pointer_trigger(schema_pointers_table())
     :ok = execute "drop function backing_pointer_trigger()"
-    drop_if_exists index(:pointers, :table_id)
-    drop_if_exists index(:pointers_table, :table)
-    drop_if_exists table(:pointers)
-    drop_if_exists table(:pointers_table)
+    drop_if_exists index(schema_pointers(), :table_id)
+    drop_if_exists index(schema_pointers_table(), :table)
+    drop_if_exists table(schema_pointers())
+    drop_if_exists table(schema_pointers_table())
   end
 
   defp create_pointer_trigger_function() do
@@ -117,13 +118,13 @@ defmodule Pointers.Migration do
   def insert_table_record(id, name) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     name = table_name(name)
-    repo().insert_all("pointers_table", [%{id: id, table: name}], on_conflict: :nothing)
+    repo().insert_all(schema_pointers_table(), [%{id: id, table: name}], on_conflict: :nothing)
   end
 
   @doc "Delete a Table record. Not required when using `drop_pointable_table`"
   def delete_table_record(id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
-    repo().delete_all(from t in "pointers_table", where: t.id == ^id)
+    repo().delete_all(from t in schema_pointers_table(), where: t.id == ^id)
   end
 
 end
