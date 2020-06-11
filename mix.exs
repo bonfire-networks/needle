@@ -8,7 +8,6 @@ defmodule Pointers.MixProject do
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      compilers: Mix.compilers() ++ [:protocol_ex]
     ]
   end
 
@@ -20,7 +19,7 @@ defmodule Pointers.MixProject do
 
   defp deps do
     [
-      {:pointers_ulid, "~> 0.1"},
+      {:pointers_ulid, ">= 0.1.2"},
       {:ecto_sql, "~> 3.4"},
     ]
   end

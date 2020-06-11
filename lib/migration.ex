@@ -7,6 +7,8 @@ defmodule Pointers.Migration do
   import Ecto.Migration
   alias Pointers.Table
 
+  defdelegate init_pointers_ulid_extra(), to: Pointers.ULID.Migration
+
   defp table_name(name) when is_atom(name), do: Atom.to_string(name)
   defp table_name(name) when is_binary(name), do: name
 
