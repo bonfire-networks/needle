@@ -56,16 +56,16 @@ defmodule Pointers.Migration do
   """
   @spec init_pointers(direction :: :up | :down) :: nil
   def init_pointers(:up) do
-    create table(schema_pointers_table(), primary_key: false) do
+    create_if_not_exists table(schema_pointers_table(), primary_key: false) do
       add_pointer_pk()
       add :table, :text, null: false
     end
-    create table(schema_pointers(), primary_key: false) do
+    create_if_not_exists table(schema_pointers(), primary_key: false) do
       add_pointer_pk()
       add :table_id, references(schema_pointers_table(), on_delete: :delete_all, type: :uuid), null: false
     end
-    create unique_index(schema_pointers_table(), :table)
-    create index(schema_pointers(), :table_id)
+    create_if_not_exists unique_index(schema_pointers_table(), :table)
+    create_if_not_exists index(schema_pointers(), :table_id)
     flush()
     insert_table_record(Table.table_id(), schema_pointers_table())
     create_pointer_trigger_function()
