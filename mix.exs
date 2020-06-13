@@ -4,7 +4,7 @@ defmodule Pointers.MixProject do
   def project do
     [
       app: :pointers,
-      version: "0.1.0",
+      version: "0.1.1-alpha",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -25,10 +25,12 @@ defmodule Pointers.MixProject do
     ]
   end
 
+  @doc "helps make the table names configurable, though you also need to change this one in `lib/table.ex`"
   def schema_pointers_table do
     Application.get_env(:pointers, :schema_pointers_table, "pointers_table")
   end
 
+  @doc "helps make the table names configurable, though you also need to change this one in `lib/table.ex`"
   def schema_pointers do
     Application.get_env(:pointers, :schema_pointers, "pointers")
   end

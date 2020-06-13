@@ -14,7 +14,8 @@ defmodule Pointers.Table do
     schema: atom | nil,
   }
 
-  pointable_schema(schema_pointers_table(), "P01NTERTAB1EF0RA11TAB1ES00", false) do
+   # TBD if we can use schema_pointers_table() here
+  pointable_schema("mn_table", "P01NTERTAB1EF0RA11TAB1ES00", false) do
     field :table, :string
     field :schema, :any, virtual: true
     field :pointed, :any, virtual: true 

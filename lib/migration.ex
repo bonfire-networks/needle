@@ -117,9 +117,11 @@ defmodule Pointers.Migration do
 
   @doc "Insert a Table record. Not required when using `create_pointable_table`"
   def insert_table_record(id, name) do
-    {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
+    cast_id = Pointers.ULID.cast!(id)
+    # {:ok, ulid_id} = Pointers.ULID.dump(cast_id)
+    # {:ok, table_id} = Ecto.UUID.load(ulid_id)
     name = table_name(name)
-    repo().insert_all(schema_pointers_table(), [%{id: id, table: name}], on_conflict: :nothing)
+    repo().insert_all(Pointers.Table, [%{id: cast_id, table: name}], on_conflict: :replace_all)
   end
 
   @doc "Delete a Table record. Not required when using `drop_pointable_table`"
