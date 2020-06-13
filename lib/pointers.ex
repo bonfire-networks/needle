@@ -30,5 +30,5 @@ defmodule Pointers do
   defp plan(%Pointer{id: id, table_id: table}, acc) do
     Map.update(acc, Tables.schema!(table), MapSet.new([id]), &MapSet.put(&1, id))
   end
-    
+
 end
