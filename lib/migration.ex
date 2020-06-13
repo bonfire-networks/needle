@@ -68,9 +68,9 @@ defmodule Pointers.Migration do
     create_if_not_exists unique_index(schema_pointers_table(), :table)
     create_if_not_exists index(schema_pointers(), :table_id)
     flush()
-    drop_main_pointer_trigger_function() # workaround for pre-existing pointers/triggers
-    drop_pointer_trigger(schema_pointers_table())
-    flush()
+    # drop_main_pointer_trigger_function() # workaround for pre-existing pointers/triggers
+    # drop_pointer_trigger(schema_pointers_table())
+    # flush()
     insert_table_record(Table.table_id(), schema_pointers_table())
     flush()
     create_main_pointer_trigger_function()
@@ -126,6 +126,7 @@ defmodule Pointers.Migration do
   @doc false
   def create_pointer_trigger(table) do
     table = table_name(table)
+    drop_pointer_trigger(table) # in case it already exists
     execute """
     create trigger "insert_pointer_#{table}"
     before insert on "#{table}"
