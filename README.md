@@ -26,18 +26,50 @@ that combines a millisecond-precision timestamp and some randomness to
 reduce the likelihood of a clash. It naturally sorts both in binary
 and text form by time and as far as postgres is concerned, it's a UUID.
 
+## Installation
+
+Dependency:
+
+```elixir
+{:pointers, "~> 0.1.0"}
+```
+
+You will also need to write a simple migration to set up the database
+before you can start writing your regular migrations:
+
+```elixir
+defmodule MyApp.Repo.Migrations.InitPointers do
+  use Ecto.Migration
+  import Pointers.Migration
+
+  def up(), do: inits(:up)
+  def down(), do: inits(:down)
+
+  defp inits(dir) do
+    init_pointers_ulid_extra(dir) # this one is optional but recommended
+    init_pointers(dir) # this one is not optional
+  end
+
+end
+```
+
 ## Defining a pointable table
 
 Pointable tables require a unique sentinel ULID to identify
 them. These must be 26 characters long and in the alphabet of
 [Crockford's Base32](https://en.wikipedia.org/wiki/Base32#Crockford's_Base32).
-They should be easy to identify in a printout and might be silly. 
+They should be easy to identify in a printout and might be silly.
+
+There is a helper function, `synthesise!/1` in `Pointers.ULID` to
+assist with this process - give it a 26-character long binary of ascii
+alphanumerics and it will give you the closest ULID that matches back.
 
 Let's look at a simple schema:
 
 ```elixir
 defmodule MyApp.Greeting do
   use Pointers.Schema
+
   pointable_schema("myapp_greeting", "GREET1NGSFR0MD0CEXAMP1E000") do
     field :greeting, :string
   end
@@ -54,7 +86,7 @@ Now let's define the migration for our schema:
 defmodule MyApp.Repo.Migrations.Greeting do
   use Ecto.Migration
   import Pointers.Migration
-  
+
   def up() do
     create_pointable_table(:greeting) do
       add :greeting, :text, null: false
@@ -71,53 +103,76 @@ end
 As you can see, it's pretty similar to defining a regular migration,
 except you use `create_pointable_table` and `drop_pointable_table`.
 
-## Using Pointers
+## Referencing with Pointers
 
-(TODO)
+Ecto does not know anything about our scheme, so unless we
+specifically want something to reference one of the pointed tables, we
+typically `belongs_to` with `Pointers.Pointer`. The table in which we
+do this does not itself need to be pointable.
+
+```elixir
+defmodule MyApp.Foo do
+
+  use Ecto.Schema
+  alias Pointers.Pointer
+
+  # regular ecto table, not pointable!
+  schema "hello" do
+    field :pointer, Pointer # who knows what it points to?
+  end
+
+end
+```
+
+If you choose to reference a specific table instead, you must ensure
+that the referenced record exists in that table in the normal way.
+
+## Dereferencing with Pointers
+
+Unfortunately, reading pointers is a bit more involved than writing
+them. It is likely that depending on the type being pointed to, you
+will want to execute different queries.
+
+Given a `Pointer` (such as one preloaded on another table), you can
+inspect the table it points to and switch query based upon
+this. `Pointers.plan` can turn a list of Pointers into a map of schema
+module name to MapSet of ids so you can extend the strategy for bulk.
+
+## Trait tables
+
+An alternative idea I've been playing with recently takes inspiration
+from game design, where ECS (entity component system) libraries are
+the norm.
+
+Objects normally can be thought of as a set of named fields. In an
+ECS, an entity is just an id and it can have any number of
+components. A component is the set of named fields traditionally like
+an object, except we can have multiple of them.
+
+ECS systems allow preserving the benefits of static typing while
+allowing code to only care about the components it cares about. By
+carving at the component level, we are able to build on some details
+without being fully coupled to the implementation details.
+
+Pointers allow us to point to records in a number of tables in the
+database. By using ECS component-style tables (not themselves
+pointable), code which cares about certain components may join to
+those tables. Thus even though a pointer may point to conceptually
+many tables, common components may be queried by code without having
+to encode the knowledge of what the types are in the query. It's a bit
+like graphql interfaces ("data interfaces") for the database.
+
+When inserting a pointable type, it is up to the user's code to insert
+the components they care about. When updating one, perhaps the
+relevant components must be updated. When deleting one, you will have
+to cascade deletes.
 
 ## TODO
 
 * Docs!
 * Tests!
-* `mix pointers.gen.migration.init` task to generate an init migration
-
-## Installation
-
-Dependency:
-
-```elixir
-{:pointers, "~> 0.1.0"}
-```
-
-Compiler registration (protocol_ex):
-
-```elixir
-def project do
-  [ # ...
-    compilers: Mix.compilers ++ [:protocol_ex],
-    # ...
-  ]
-end
-```
-
-You will also need to write a simple migration:
-
-```elixir
-defmodule MyApp.Repo.Migrations.InitPointers do
-  use Ecto.Migration
-  import Pointers.Migration
-  import Pointers.ULID.Migration
-  
-  def up(), do: inits(:up)
-  def down(), do: inits(:down)
-
-  defp inits(dir) do
-    init_pointers_ulid_extra(dir) # this one is optional but recommended
-    init_pointers(dir) # this one is not optional
-  end
-
-end
-```
+* `mix pointers.gen.init` task to generate an init migration
+* `mix pointers.gen.migration` task to generate a skeleton migration
 
 ### What lurks underneath?
 

@@ -20,6 +20,7 @@ defmodule Pointers.Migration do
   def add_pointer_pk(), do: add(:id, :uuid, primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
+  @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
   @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
   defmacro create_pointable_table(name, id, opts \\ [], body) do
     Pointers.ULID.cast!(id)
@@ -59,12 +60,12 @@ defmodule Pointers.Migration do
       add_pointer_pk()
       add :table, :text, null: false
     end
-    create table(:pointers, primary_key: false) do
+    create table(:pointers_pointer, primary_key: false) do
       add_pointer_pk()
       add :table_id, references(:pointers_table, on_delete: :delete_all, type: :uuid), null: false
     end
     create unique_index(:pointers_table, :table)
-    create index(:pointers, :table_id)
+    create index(:pointers_pointer, :table_id)
     flush()
     insert_table_record(Table.table_id(), :pointers_table)
     create_pointer_trigger_function()
@@ -74,9 +75,9 @@ defmodule Pointers.Migration do
   def init_pointers(:down) do
     drop_pointer_trigger(:pointers_table)
     :ok = execute "drop function backing_pointer_trigger()"
-    drop_if_exists index(:pointers, :table_id)
+    drop_if_exists index(:pointers_pointer, :table_id)
     drop_if_exists index(:pointers_table, :table)
-    drop_if_exists table(:pointers)
+    drop_if_exists table(:pointers_pointer)
     drop_if_exists table(:pointers_table)
   end
 
@@ -96,7 +97,8 @@ defmodule Pointers.Migration do
     """
   end
 
-  defp create_pointer_trigger(table) do
+  @doc false
+  def create_pointer_trigger(table) do
     table = table_name(table)
     execute """
     create trigger "backing_pointer_trigger_#{table}"
@@ -106,7 +108,8 @@ defmodule Pointers.Migration do
     """
   end
 
-  defp drop_pointer_trigger(table) do
+  @doc false
+  def drop_pointer_trigger(table) do
     table = table_name(table)
     execute """
     drop trigger "backing_pointer_trigger_#{table}" on "#{table}"
