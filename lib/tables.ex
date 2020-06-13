@@ -79,13 +79,16 @@ defmodule Pointers.Tables do
   def init(_) do
     indexed =
       search_path()
-      |> Enum.flat_map(&Application.spec(&1, :modules))
+      |> Enum.flat_map(&app_modules/1)
       |> Enum.filter(&pointer_schema?/1)
       |> Enum.reduce(%{}, &index/2)
     :persistent_term.put(__MODULE__, indexed)
     :ignore
   end
 
+  defp app_modules(app), do: app_modules(app, Application.spec(app, :modules))
+  defp app_modules(_, nil), do: []
+  defp app_modules(_, mods), do: mods
   # called by init/1
   defp search_path(), do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
