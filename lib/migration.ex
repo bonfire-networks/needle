@@ -63,16 +63,20 @@ defmodule Pointers.Migration do
     end
     create_if_not_exists table(schema_pointers(), primary_key: false) do
       add_pointer_pk()
-      add :table_id, references(schema_pointers_table(), on_delete: :delete_all, type: :uuid), null: false
+      add :table_id, references(schema_pointers_table(), on_delete: :delete_all, on_update: :update_all, type: :uuid), null: false
     end
     create_if_not_exists unique_index(schema_pointers_table(), :table)
     create_if_not_exists index(schema_pointers(), :table_id)
-    drop_main_pointer_trigger_function() # workaround for pre-existing pointers/triggers
     flush()
-    create_main_pointer_trigger_function()
-    create_pointer_trigger(schema_pointers_table()) 
+    drop_main_pointer_trigger_function() # workaround for pre-existing pointers/triggers
+    drop_pointer_trigger(schema_pointers_table())
     flush()
     insert_table_record(Table.table_id(), schema_pointers_table())
+    flush()
+    create_main_pointer_trigger_function()
+    flush()
+    create_pointer_trigger(schema_pointers_table()) 
+    flush()
   end
 
   def init_pointers(:down) do
@@ -85,6 +89,15 @@ defmodule Pointers.Migration do
     drop_if_exists table(schema_pointers_table())
   end
 
+  @doc "Special function to run if upgrading an old schema with pointers to this pointers lib"
+  def upgrade_table_key(:up) do
+    drop(constraint(schema_pointers(), "mn_pointer_table_id_fkey"))
+  
+    alter table(schema_pointers()) do
+      modify(:table_id, references(schema_pointers_table(), on_delete: :delete_all, on_update: :update_all, type: :uuid), null: false)
+    end
+  end
+  
   defp create_main_pointer_trigger_function() do
     table_name = table_name(schema_pointers_table())
     pointers_name = table_name(schema_pointers())
@@ -125,7 +138,7 @@ defmodule Pointers.Migration do
   def drop_pointer_trigger(table) do
     table = table_name(table)
     execute """
-    drop trigger "insert_pointer_#{table}" on "#{table}"
+    drop trigger if exists "insert_pointer_#{table}" on "#{table}"
     """
   end
 
@@ -137,11 +150,8 @@ defmodule Pointers.Migration do
     table_name = table_name(name)
     pointers_name = table_name(schema_pointers())
     
-    # repo().insert_all(Pointers.Table, [%{id: cast_id, table: table_name}], on_conflict: [set: [id: cast_id]], conflict_target: [:table])
-    # execute """
-    # INSERT INTO "mn_table" AS m0 ("id","table") VALUES ($1,$2) ON CONFLICT ("table") DO UPDATE CASCADE SET "id" = $1
-    # """
-    repo().query("INSERT INTO $1 AS m0 (id,table) VALUES ($2,$3) ON CONFLICT (table) DO UPDATE CASCADE SET id = $2", [pointers_name, cast_id, name])
+    repo().insert_all(Pointers.Table, [%{id: cast_id, table: table_name}], on_conflict: [set: [id: cast_id]], conflict_target: [:table])
+    # repo().query("INSERT INTO #{pointers_name} AS m0 (id,table) VALUES ($1,$2) ON CONFLICT (table) DO UPDATE SET id = $1", [cast_id, name])
   end
 
   @doc "Delete a Table record. Not required when using `drop_pointable_table`"
