@@ -67,32 +67,36 @@ defmodule Pointers.Migration do
     end
     create_if_not_exists unique_index(schema_pointers_table(), :table)
     create_if_not_exists index(schema_pointers(), :table_id)
+    drop_main_pointer_trigger_function() # workaround for pre-existing pointers/triggers
+    flush()
+    create_main_pointer_trigger_function()
+    create_pointer_trigger(schema_pointers_table()) 
     flush()
     insert_table_record(Table.table_id(), schema_pointers_table())
-    create_pointer_trigger_function()
-    create_pointer_trigger(schema_pointers_table())
   end
 
   def init_pointers(:down) do
     drop_pointer_trigger(schema_pointers_table())
-    :ok = execute "drop function backing_pointer_trigger()"
+    drop_main_pointer_trigger_function()
+    flush()
     drop_if_exists index(schema_pointers(), :table_id)
     drop_if_exists index(schema_pointers_table(), :table)
     drop_if_exists table(schema_pointers())
     drop_if_exists table(schema_pointers_table())
   end
 
-  defp create_pointer_trigger_function() do
-    table_name = schema_pointers_table()
+  defp create_main_pointer_trigger_function() do
+    table_name = table_name(schema_pointers_table())
+    pointers_name = table_name(schema_pointers())
     :ok = execute """
-    create or replace function backing_pointer_trigger() returns trigger as $$
+    create or replace function insert_pointer() returns trigger as $$
     declare table_id uuid;
     begin
       select id into table_id from #{table_name} where #{table_name}.table = TG_TABLE_NAME;
       if table_id is null then
         raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
       end if;
-      insert into pointers_pointer (id, table_id) values (NEW.id, table_id);
+      insert into #{pointers_name} (id, table_id) values (NEW.id, table_id);
       return NEW;
     end;
     $$ language plpgsql
@@ -100,13 +104,20 @@ defmodule Pointers.Migration do
   end
 
   @doc false
+  def drop_main_pointer_trigger_function() do
+    execute """
+    drop function if exists insert_pointer() cascade
+    """
+  end
+
+  @doc false
   def create_pointer_trigger(table) do
     table = table_name(table)
     execute """
-    create trigger "backing_pointer_trigger_#{table}"
+    create trigger "insert_pointer_#{table}"
     before insert on "#{table}"
     for each row
-    execute procedure backing_pointer_trigger()
+    execute procedure insert_pointer()
     """
   end
 
@@ -114,7 +125,7 @@ defmodule Pointers.Migration do
   def drop_pointer_trigger(table) do
     table = table_name(table)
     execute """
-    drop trigger "backing_pointer_trigger_#{table}" on "#{table}"
+    drop trigger "insert_pointer_#{table}" on "#{table}"
     """
   end
 
@@ -123,8 +134,14 @@ defmodule Pointers.Migration do
     cast_id = Pointers.ULID.cast!(id)
     # {:ok, ulid_id} = Pointers.ULID.dump(cast_id)
     # {:ok, table_id} = Ecto.UUID.load(ulid_id)
-    name = table_name(name)
-    repo().insert_all(Pointers.Table, [%{id: cast_id, table: name}], on_conflict: :replace_all)
+    table_name = table_name(name)
+    pointers_name = table_name(schema_pointers())
+    
+    # repo().insert_all(Pointers.Table, [%{id: cast_id, table: table_name}], on_conflict: [set: [id: cast_id]], conflict_target: [:table])
+    # execute """
+    # INSERT INTO "mn_table" AS m0 ("id","table") VALUES ($1,$2) ON CONFLICT ("table") DO UPDATE CASCADE SET "id" = $1
+    # """
+    repo().query("INSERT INTO $1 AS m0 (id,table) VALUES ($2,$3) ON CONFLICT (table) DO UPDATE CASCADE SET id = $2", [pointers_name, cast_id, name])
   end
 
   @doc "Delete a Table record. Not required when using `drop_pointable_table`"
