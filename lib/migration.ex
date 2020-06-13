@@ -21,6 +21,7 @@ defmodule Pointers.Migration do
   def add_pointer_pk(), do: add(:id, :uuid, primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
+  @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
   @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
   defmacro create_pointable_table(name, id, opts \\ [], body) do
     Pointers.ULID.cast!(id)
@@ -98,7 +99,8 @@ defmodule Pointers.Migration do
     """
   end
 
-  defp create_pointer_trigger(table) do
+  @doc false
+  def create_pointer_trigger(table) do
     table = table_name(table)
     execute """
     create trigger "backing_pointer_trigger_#{table}"
@@ -108,7 +110,8 @@ defmodule Pointers.Migration do
     """
   end
 
-  defp drop_pointer_trigger(table) do
+  @doc false
+  def drop_pointer_trigger(table) do
     table = table_name(table)
     execute """
     drop trigger "backing_pointer_trigger_#{table}" on "#{table}"
