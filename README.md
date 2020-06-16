@@ -88,7 +88,7 @@ defmodule MyApp.Repo.Migrations.Greeting do
   import Pointers.Migration
 
   def up() do
-    create_pointable_table(:greeting) do
+    create_pointable_table(:greeting, "GREET1NGSFR0MD0CEXAMP1E000") do
       add :greeting, :text, null: false
     end
   end
@@ -101,7 +101,9 @@ end
 ```
 
 As you can see, it's pretty similar to defining a regular migration,
-except you use `create_pointable_table` and `drop_pointable_table`.
+except you use `create_pointable_table` and
+`drop_pointable_table`. Notice that our sentinel ULID makes an
+appearance again here. It's *very* important that these match.
 
 ## Referencing with Pointers
 
