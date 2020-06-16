@@ -42,10 +42,10 @@ defmodule Pointers.Migration do
   end
 
   @doc "Drops a pointable table"
-  @spec drop_pointable_table(name :: binary) :: nil
-  def drop_pointable_table(name) do
+  @spec drop_pointable_table(name :: binary, id :: binary) :: nil
+  def drop_pointable_table(name, id) do
     drop_pointer_trigger(name)
-    delete_table_record(name)
+    delete_table_record(id)
     drop_if_exists table(name)
   end
 
