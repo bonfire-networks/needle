@@ -28,7 +28,8 @@ defmodule Pointers.Migration do
     opts = [primary_key: false] ++ opts
     quote do
       Pointers.Migration.insert_table_record(unquote(id), unquote(name))
-      Ecto.Migration.create_if_not_exists Ecto.Migration.table(unquote(name), unquote(opts)) do
+      table = Ecto.Migration.table(unquote(name), unquote(opts))
+      Ecto.Migration.create_if_not_exists table do
         Pointers.Migration.add_pointer_pk()
         unquote(body)
       end
@@ -43,6 +44,22 @@ defmodule Pointers.Migration do
     delete_table_record(name)
     drop_if_exists table(name)
   end
+
+  @doc "Creates a trait table - one with a ULID primary key and no trigger"
+  defmacro create_trait_table(name, opts \\ [], body) do
+    opts = [primary_key: false] ++ opts
+    quote do
+      table = Ecto.Migration.table(unquote(name), unquote(opts))
+      Ecto.Migration.create_if_not_exists table do
+        Pointers.Migration.add_pointer_pk()
+        unquote(body)
+      end
+    end
+  end
+
+  @doc "Drops a trait table. Actually just drop_if_exists table(name)"
+  @spec drop_trait_table(name :: binary) :: nil
+  def drop_trait_table(name), do: drop_if_exists table(name)
 
   @doc """
   When migrating up: initialises the pointers database.
@@ -143,7 +160,8 @@ defmodule Pointers.Migration do
     """
   end
 
-  @doc "Insert a Table record. Not required when using `create_pointable_table`"
+  #Insert a Table record. Not required when using `create_pointable_table`
+  @doc false
   def insert_table_record(id, name) do
     cast_id = Pointers.ULID.cast!(id)
     # {:ok, ulid_id} = Pointers.ULID.dump(cast_id)
@@ -155,7 +173,8 @@ defmodule Pointers.Migration do
     # repo().query("INSERT INTO #{pointers_name} AS m0 (id,table) VALUES ($1,$2) ON CONFLICT (table) DO UPDATE SET id = $1", [cast_id, name])
   end
 
-  @doc "Delete a Table record. Not required when using `drop_pointable_table`"
+  #Delete a Table record. Not required when using `drop_pointable_table`
+  @doc false
   def delete_table_record(id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     repo().delete_all(from t in schema_pointers_table(), where: t.id == ^id)

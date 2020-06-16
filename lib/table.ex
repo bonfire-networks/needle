@@ -12,6 +12,7 @@ defmodule Pointers.Table do
   @type t :: %Pointers.Table{
     table: binary,
     schema: atom | nil,
+    pointed: term,
   }
 
    # TBD if we can use schema_pointers_table() here
