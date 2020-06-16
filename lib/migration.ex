@@ -119,7 +119,7 @@ defmodule Pointers.Migration do
     end
   end
   
-  defp create_main_pointer_trigger_function() do
+  def create_main_pointer_trigger_function() do
     table_name = table_name(schema_pointers_table())
     pointers_name = table_name(schema_pointers())
     :ok = execute """
@@ -130,7 +130,7 @@ defmodule Pointers.Migration do
       if table_id is null then
         raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
       end if;
-      insert into #{pointers_name} (id, table_id) values (NEW.id, table_id);
+      insert into #{pointers_name} (id, table_id) values (NEW.id, table_id) ON CONFLICT DO NOTHING;
       return NEW;
     end;
     $$ language plpgsql
