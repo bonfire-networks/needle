@@ -19,7 +19,7 @@ defmodule Pointers.MixProject do
 
   defp deps do
     [
-      {:pointers_ulid, ">= 0.1.2"},
+      {:pointers_ulid, ">= 0.2.0"},
       {:ecto_sql, "~> 3.4"},
       {:protocol_ex, "~> 0.4.3"},
     ]
