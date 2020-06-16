@@ -10,6 +10,7 @@ defmodule Pointers.Table do
   @type t :: %Pointers.Table{
     table: binary,
     schema: atom | nil,
+    pointed: term,
   }
 
   pointable_schema("pointers_table", "P01NTERTAB1EF0RA11TAB1ES00", false) do
