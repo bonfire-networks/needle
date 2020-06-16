@@ -20,6 +20,10 @@ defmodule Pointers.Migration do
   @spec add_pointer_pk() :: nil
   def add_pointer_pk(), do: add(:id, :uuid, primary_key: true)
 
+  @spec add_pointer_ref_pk() :: nil
+  def add_pointer_ref_pk(),
+    do: add(:id, references("pointers_pointer", type: :uuid), primary_key: true)
+
   @doc "Creates a pointable table along with its trigger."
   @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
   @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
@@ -51,7 +55,7 @@ defmodule Pointers.Migration do
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
       Ecto.Migration.create_if_not_exists table do
-        Pointers.Migration.add_pointer_pk()
+        Pointers.Migration.add_pointer_ref_pk()
         unquote(body)
       end
     end
