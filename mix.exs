@@ -4,17 +4,17 @@ defmodule Pointers.MixProject do
   def project do
     [
       app: :pointers,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      description: "A maintained ULID datatype for Ecto",
-      homepage_url: "https://github.com/commonspub/pointers_ulid",
-      source_url: "https://github.com/commonspub/pointers_ulid",
+      description: "Ecto's missing universal foreign key",
+      homepage_url: "https://github.com/commonspub/pointers",
+      source_url: "https://github.com/commonspub/pointers",
       package: [
         licenses: ["Apache 2"],
         links: %{
-          "Repository" => "https://github.com/commonspub/pointers_ulid",
-          "Hexdocs" => "https://hexdocs.pm/pointers_ulid",
+          "Repository" => "https://github.com/commonspub/pointers",
+          "Hexdocs" => "https://hexdocs.pm/pointers",
         },
       ],
       docs: [

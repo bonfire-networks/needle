@@ -3,7 +3,11 @@
 
 # pointers
 
-One foreign key to rule them all and in the darkness, bind them.
+Ecto's missing universal foreign key
+
+> One foreign key to rule them all and in the darkness, bind them.
+
+-- Gandalf, paraphrased.
 
 A means of foreign keying many tables in one field. Designed for
 highly interlinked data in highly dynamic schemata where tracking all

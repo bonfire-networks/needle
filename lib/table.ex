@@ -5,6 +5,7 @@ defmodule Pointers.Table do
   """
 
   use Pointers.Schema
+  alias Pointers.Config
   import Ecto.Schema
 
   @type t :: %Pointers.Table{
@@ -13,7 +14,7 @@ defmodule Pointers.Table do
     pointed: term,
   }
 
-  pointable_schema("pointers_table", "P01NTERTAB1EF0RA11TAB1ES00", false) do
+  pointable_schema(Config.table_table(), "P01NTERTAB1EF0RA11TAB1ES00", false) do
     field :table, :string
     field :schema, :any, virtual: true
     field :pointed, :any, virtual: true 
