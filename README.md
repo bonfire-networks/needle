@@ -99,7 +99,7 @@ defmodule MyApp.Repo.Migrations.Greeting do
   end
 
   def down() do
-    drop_pointable_table(:greeting)
+    drop_pointable_table(:greeting, "GREET1NGSFR0MD0CEXAMP1E000")
   end
 
 end
