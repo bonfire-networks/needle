@@ -33,14 +33,9 @@ and text form by time and as far as postgres is concerned, it's a UUID.
 
 ## Installation
 
-Dependency:
-
-```elixir
-{:pointers, "~> 0.1.0"}
-```
-
-You will also need to write a simple migration to set up the database
-before you can start writing your regular migrations:
+Aside from the hex dependency, you will also need to write a simple
+migration to set up the database before you can start writing your
+regular migrations:
 
 ```elixir
 defmodule MyApp.Repo.Migrations.InitPointers do
