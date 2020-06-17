@@ -1,4 +1,5 @@
-<!-- [hex](https://hex.pm/pointers) [hexdocs](https://hexdocs.pm/pointers) -->
+[![hex.pm](https://img.shields.io/hexpm/v/pointers)](https://hex.pm/pointers)
+[hexdocs](https://hexdocs.pm/pointers)
 
 # pointers
 
