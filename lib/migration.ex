@@ -100,10 +100,10 @@ defmodule Pointers.Migration do
   def init_pointers(:down) do
     drop_pointer_trigger(Config.table_table())
     drop_pointer_trigger_function()
-    drop_if_exists index(:pointers_pointer, :table_id)
-    drop_if_exists index(:pointers_table, :table)
-    drop_if_exists table(:pointers_pointer)
-    drop_if_exists table(:pointers_table)
+    drop_if_exists index(Config.pointer_table(), :table_id)
+    drop_if_exists index(Config.table_table(), :table)
+    drop_if_exists table(Config.pointer_table())
+    drop_if_exists table(Config.table_table())
   end
 
   @doc false
@@ -127,7 +127,7 @@ defmodule Pointers.Migration do
 
   @doc false
   def drop_pointer_trigger_function() do
-    execute "drop function if exists #{Config.trigger_function()}()"
+    execute "drop function if exists #{Config.trigger_function()}() cascade"
   end
 
   @doc false
@@ -146,7 +146,7 @@ defmodule Pointers.Migration do
   def drop_pointer_trigger(table) do
     table = table_name(table)
     execute """
-    drop trigger if exists"#{Config.trigger_prefix()}#{table}" on "#{table}"
+    drop trigger if exists "#{Config.trigger_prefix()}#{table}" on "#{table}"
     """
   end
 
