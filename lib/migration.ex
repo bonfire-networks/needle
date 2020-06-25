@@ -46,7 +46,7 @@ defmodule Pointers.Migration do
   def drop_pointable_table(name, id) do
     drop_pointer_trigger(name)
     delete_table_record(id)
-    drop_if_exists table(name)
+    drop_table(name)
   end
 
   @doc "Creates a trait table - one with a ULID primary key and no trigger"
@@ -61,9 +61,9 @@ defmodule Pointers.Migration do
     end
   end
 
-  @doc "Drops a trait table. Actually just drop_if_exists table(name)"
+  @doc "Drops a trait table. Actually just a simple cascading drop"
   @spec drop_trait_table(name :: binary) :: nil
-  def drop_trait_table(name), do: drop_if_exists table(name)
+  def drop_trait_table(name), do: drop_table(name)
 
   @doc """
   When migrating up: initialises the pointers database.
@@ -102,8 +102,8 @@ defmodule Pointers.Migration do
     drop_pointer_trigger_function()
     drop_if_exists index(Config.pointer_table(), :table_id)
     drop_if_exists index(Config.table_table(), :table)
-    drop_if_exists table(Config.pointer_table())
-    drop_if_exists table(Config.table_table())
+    drop_table(Config.pointer_table())
+    drop_table(Config.table_table())
   end
 
   @doc false
@@ -165,5 +165,7 @@ defmodule Pointers.Migration do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     repo().delete_all(from t in Config.table_table(), where: t.id == ^id)
   end
+  
+  def drop_table(name), do: execute "drop table if exists #{name} cascade"
 
 end
