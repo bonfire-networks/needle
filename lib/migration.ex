@@ -22,7 +22,7 @@ defmodule Pointers.Migration do
 
   @spec add_pointer_ref_pk() :: nil
   def add_pointer_ref_pk(),
-    do: add(:id, references(Config.pointer_table(), type: :uuid), primary_key: true)
+    do: add(:id, references(Config.pointer_table(), type: :uuid, on_update: :update_all, on_delete: :delete_all), primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
   @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
