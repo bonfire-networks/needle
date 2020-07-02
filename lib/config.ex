@@ -15,4 +15,5 @@ defmodule Pointers.Config do
 
   defp config(), do: Application.get_all_env(:pointers)
 
+
 end

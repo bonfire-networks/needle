@@ -13,6 +13,11 @@ defmodule Pointers do
   def cast!(%Pointer{}=p), do: p
   def cast!(%struct{id: id}), do: %Pointer{id: id, table_id: Tables.id!(struct)}
 
+  @doc "Looks up the table for a given pointer"
+  def table(%Pointer{table_id: id}), do: Tables.table!(id)
+
+  def schema(%Pointer{table_id: id}), do: Tables.schema!(id)
+
   @doc """
   Return the provided pointer when it belongs to table queryable by the given table search term.
   """

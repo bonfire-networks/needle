@@ -4,17 +4,21 @@ defmodule Pointers.Table do
   pointers abstraction - mandatory if participating.
   """
 
-  use Pointers.Schema
-  alias Pointers.Config
+  use Pointers.Pointable,
+    otp_app: :pointers,
+    source: "pointers_table",
+    table_id: "P01NTERTAB1EF0RA11TAB1ES00",
+    autogenerate: false
+  
   import Ecto.Schema
 
   @type t :: %Pointers.Table{
     table: binary,
     schema: atom | nil,
-    pointed: term,
+    pointed: term | nil,
   }
 
-  pointable_schema(Config.table_table(), "P01NTERTAB1EF0RA11TAB1ES00", false) do
+  pointable_schema do
     field :table, :string
     field :schema, :any, virtual: true
     field :pointed, :any, virtual: true 
