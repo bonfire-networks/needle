@@ -33,10 +33,11 @@ defmodule Pointers.MixProject do
 
   defp deps do
     [
-      {:pointers_ulid, "~> 0.2"},
       {:ecto_sql, "~> 3.4"},
-      {:flexto, git: "https://github.com/commonspub/flexto", branch: "main"},
+      {:flexto, "~> 0.1"},
+      {:pointers_ulid, "~> 0.2"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
     ]
   end
+
 end

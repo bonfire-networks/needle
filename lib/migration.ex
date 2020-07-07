@@ -85,8 +85,8 @@ defmodule Pointers.Migration do
     drop_table(name)
   end
 
-  @doc "Creates a trait table - one with a ULID primary key and no trigger"
-  defmacro create_trait_table(name, opts \\ [], body) do
+  @doc "Creates a mixin table - one with a ULID primary key and no trigger"
+  defmacro create_mixin_table(name, opts \\ [], body) do
     opts = [primary_key: false] ++ opts
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
@@ -97,9 +97,9 @@ defmodule Pointers.Migration do
     end
   end
 
-  @doc "Drops a trait table. Actually just a simple cascading drop"
-  @spec drop_trait_table(name :: binary) :: nil
-  def drop_trait_table(name), do: drop_table(name)
+  @doc "Drops a mixin table. Actually just a simple cascading drop"
+  @spec drop_mixin_table(name :: binary) :: nil
+  def drop_mixin_table(name), do: drop_table(name)
 
   @doc """
   When migrating up: initialises the pointers database.

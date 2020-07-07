@@ -49,7 +49,6 @@ defmodule MyApp.Repo.Migrations.InitPointers do
     init_pointers_ulid_extra(dir) # this one is optional but recommended
     init_pointers(dir) # this one is not optional
   end
-
 end
 ```
 
@@ -239,7 +238,7 @@ defmodule My.Creator.Migration do
   defp user_table(), do: My.User.__schema__(:source)
 
   defp migrate_creator(index_opts, :up) do
-    create_trait_table(creator_table()) do
+    create_mixin_table(creator_table()) do
       add :creator_id, strong_pointer(user_table()), null: false 
     end
     create_if_not_exists(unique_index(creator_table(), [:creator_id], index_opts))
@@ -247,9 +246,8 @@ defmodule My.Creator.Migration do
 
   defp migrate_creator(index_opts, :down) do
     drop_if_exists(unique_index(creator_table(), [:creator_id], index_opts))
-    drop_trait_table(creator_table())
+    drop_mixin_table(creator_table())
   end
-
 end
 ```
 
@@ -282,7 +280,8 @@ The `table_id` is also configurable, but we don't recommend you change it.
 In addition, all pointable and mixin schemas permit extension with
 [Flexto](https://github.com/commonspub/flexto). See the [Flexto
 docs](https://hexdocs.pm/flexto/) for more information about how to
-extend schemas via configuration.
+extend schemas via configuration. You will probably at the very least
+want to insert some `has_one` for mixins off your pointables.
 
 ## TODO
 
@@ -310,7 +309,7 @@ are what we see as the deficiencies in our approach:
    understanding the relationships between the various tables
    properly. It's hard to gauge and we haven't even tried.
 
-Of these, only the last is likely to change. If you're going to pick
+These are not likely to change. If you're going to pick
 this library, do so in the full knowledge of the tradeoffs it makes.
 
 Alternatives include (I'm sure you can think of others):
@@ -318,7 +317,11 @@ Alternatives include (I'm sure you can think of others):
 * Storing the table name in a second column alongside every foreign key.
 * A compound datatype of id and table name.
 * Byte/String manipulation tricks.
-* Evil SQL hacks based upon compile time configuration
+* Evil SQL hacks based upon compile time configuration.
+
+While we have our gripes with this approach, once you've gotten the
+hang of using it, it works out pretty well for most purposes and it's
+one of the simpler options to work with.
 
 ## Copyright and License
 
