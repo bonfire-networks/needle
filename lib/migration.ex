@@ -192,7 +192,7 @@ defmodule Pointers.Migration do
     id = Pointers.ULID.cast!(id)
     name = table_name(name)
     opts = [on_conflict: [set: [id: id]], conflict_target: [:table]]
-    repo().insert_all(Table, [%{id: id, table: name}], opts)
+    repo().insert_all(Table.__schema__(:source), [%{id: id, table: name}], opts)
   end
 
   #Delete a Table record. Not required when using `drop_pointable_table`
