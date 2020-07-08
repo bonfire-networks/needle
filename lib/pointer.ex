@@ -11,7 +11,9 @@ defmodule Pointers.Pointer do
     table =
       Application.get_env(:pointers, __MODULE__, [])
       |> Keyword.get(:source, "pointers_pointer")
-  end
+    IO.inspect(pointers_table: table)
+    table
+end
   
   @primary_key {:id, ULID, autogenerate: false}
   @foreign_key_type ULID
