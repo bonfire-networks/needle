@@ -3,6 +3,7 @@ defmodule Pointers.Util do
 
   @bad_source "You must provide a binary :source option."
   @bad_otp_app "You must provide a valid atom :otp_app option."
+  @unloaded_otp_app "You must provide a loaded :otp_app."
 
   def get_source(opts), do: check_source(Keyword.get(opts, :source))
 
@@ -12,11 +13,11 @@ defmodule Pointers.Util do
   def get_otp_app(opts), do: check_otp_app(Keyword.get(opts, :otp_app))
 
   defp check_otp_app(x) when is_atom(x),
-    do: check_otp_app_loaded(x, Application.ensure_loaded(x))
+    do: check_otp_app_loaded(x, Application.ensure_loaded(IO.inspect(x)))
   defp check_otp_app(_), do: raise ArgumentError, message: @bad_otp_app
 
   defp check_otp_app_loaded(x, :ok), do: x
-  defp check_otp_app_loaded(_, _), do: raise ArgumentError, message: @bad_otp_app
+  defp check_otp_app_loaded(_, _), do: raise ArgumentError, message: @unloaded_otp_app
 
   def put_new_attribute(module, attribute, value) do
     if not Module.has_attribute?(module, attribute),
