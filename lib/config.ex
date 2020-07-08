@@ -17,7 +17,9 @@ defmodule Pointers.Config do
 
   def schema_source(module, default) do
     IO.inspect(schema_table_for: module)
-    table = Application.get_env(:pointers, module, []) |> Keyword.get(:source, default)
+    config = Application.get_env(:pointers, module, [])
+    IO.inspect(module_config: config)
+    table = config |> Keyword.get(:source, default)
     IO.inspect(source: table)
     table
   end
