@@ -17,7 +17,7 @@ end
   
   @primary_key {:id, ULID, autogenerate: false}
   @foreign_key_type ULID
-  schema(table_name()) do
+  schema(Pointers.Pointer.table_name()) do
     belongs_to :table, Table
     field :pointed, :any, virtual: true
   end
