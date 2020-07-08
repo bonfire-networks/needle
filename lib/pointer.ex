@@ -15,7 +15,7 @@ defmodule Pointers.Pointer do
     IO.inspect(p_schema_table_for: schema_module)
     config = Application.get_all_env(:pointers)
     IO.inspect(p_module_config: config)
-    table = Pointers.Config.config(schema_module, "source")
+    table = Pointers.Config.config(schema_module, :source, default)
     IO.inspect(p_source: table)
     
   
