@@ -231,11 +231,11 @@ defmodule My.Creator.Migration do
   import Ecto.Migration
   import Pointers.Migration
 
-  def migrate_creator(index_opts \\ []),
-    do: migrate_creator(index_opts, direction())
-
   defp creator_table(), do: My.Creator.__schema__(:source)
   defp user_table(), do: My.User.__schema__(:source)
+
+  def migrate_creator(index_opts \\ []),
+    do: migrate_creator(index_opts, direction())
 
   defp migrate_creator(index_opts, :up) do
     create_mixin_table(creator_table()) do
@@ -283,12 +283,6 @@ docs](https://hexdocs.pm/flexto/) for more information about how to
 extend schemas via configuration. You will probably at the very least
 want to insert some `has_one` for mixins off your pointables.
 
-## TODO
-
-* Docs!
-* Tests!
-* `mix pointers.gen.init` task to generate an init migration
-
 ## Tradeoffs
 
 All solutions to the universal foreign key problem have tradeofs. Here
@@ -322,6 +316,14 @@ Alternatives include (I'm sure you can think of others):
 While we have our gripes with this approach, once you've gotten the
 hang of using it, it works out pretty well for most purposes and it's
 one of the simpler options to work with.
+
+## TODO
+
+* Docs!
+* Tests!
+* `mix pointers.gen.migration.init` task to generate an init migration.
+* `mix pointers.gen.schema.pointable` task to generate a pointable schema.
+* `mix pointers.gen.schema.mixin` task to generate a mixin schema.
 
 ## Copyright and License
 

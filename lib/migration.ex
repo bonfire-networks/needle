@@ -1,13 +1,21 @@
 defmodule Pointers.Migration do
-  @moduledoc """
-  Migration helpers for creating tables that participate in the pointers abasction.
-  """
+  @moduledoc "Helpers for writing Pointer-aware migrations."
 
   import Ecto.Query, only: [from: 2]
   import Ecto.Migration
   alias Pointers.{Pointer, Table, ULID}
 
   defdelegate init_pointers_ulid_extra(), to: ULID.Migration
+
+  @type pointer_type :: :strong | :weak | :unbreakable
+
+  @doc "Creates a strong, weak or unbreakable pointer depending on `type`."
+  @spec pointer(type :: pointer_type) :: term
+  @spec pointer(module :: atom, type :: pointer_type) :: term
+  def pointer(table \\ Pointer, type)
+  def pointer(table, :strong), do: strong_pointer(table)
+  def pointer(table, :weak), do: weak_pointer(table)
+  def pointer(table, :unbreakable), do: unbreakable_pointer(table)
 
   @doc """
   A reference to a pointer for use with 'add/3`. A strong pointer will
@@ -189,7 +197,7 @@ defmodule Pointers.Migration do
   #Insert a Table record. Not required when using `create_pointable_table`
   @doc false
   def insert_table_record(id, name) do
-    id = Pointers.ULID.cast!(id)
+    {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     name = table_name(name)
     opts = [on_conflict: [set: [id: id]], conflict_target: [:table]]
     repo().insert_all(Table.__schema__(:source), [%{id: id, table: name}], opts)
