@@ -7,17 +7,11 @@ defmodule Pointers.Pointer do
   alias Ecto.Changeset
   alias Pointers.{Pointer, Table, Tables, ULID}
   
-  def table_name() do
-    table =
-      Application.get_env(:pointers, __MODULE__, [])
-      |> Keyword.get(:source, "pointers_pointer")
-    IO.inspect(pointers_table: table)
-    table
-end
+  schema_module = __MODULE__
   
   @primary_key {:id, ULID, autogenerate: false}
   @foreign_key_type ULID
-  schema(Pointers.Pointer.table_name()) do
+  schema(Pointers.Config.schema_source(schema_module, "pointers_pointer")) do
     belongs_to :table, Table
     field :pointed, :any, virtual: true
   end
