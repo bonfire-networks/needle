@@ -11,7 +11,7 @@ defmodule Pointers.Util do
   defp check_source(_), do: raise ArgumentError, message: @bad_source
 
   def get_otp_app(opts) do
-    IO.inspect(get_otp_app: x)
+    IO.inspect(get_otp_app: opts)
     check_otp_app(Keyword.get(opts, :otp_app))
   end
 
