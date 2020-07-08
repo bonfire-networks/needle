@@ -23,5 +23,11 @@ defmodule Pointers.Config do
     IO.inspect(source: table)
     table
   end
+  
+  def config(module, key) do
+    :pointers
+    |> Application.get_env(module, [])
+    |> Keyword.get(key)
+  end
 
 end
