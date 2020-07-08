@@ -11,12 +11,11 @@ defmodule Pointers.Util do
   defp check_source(_), do: raise ArgumentError, message: @bad_source
 
   def get_otp_app(opts) do
-    IO.inspect(:application.get_application(__MODULE__))
+    IO.inspect(get_otp_app: x)
     check_otp_app(Keyword.get(opts, :otp_app))
   end
 
-  defp check_otp_app(x) when is_atom(x),
-    do: check_otp_app_loaded(x, IO.inspect(x))
+  defp check_otp_app(x) when is_atom(x), do: x
   defp check_otp_app(_), do: raise ArgumentError, message: @bad_otp_app
 
   defp check_otp_app_loaded(x, :ok), do: x
