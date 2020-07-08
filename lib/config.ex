@@ -24,10 +24,10 @@ defmodule Pointers.Config do
     table
   end
   
-  def config(module, key) do
+  def config(module, key, default) do
     :pointers
     |> Application.get_env(module, [])
-    |> Keyword.get(key)
+    |> Keyword.get(key, default)
   end
 
 end
