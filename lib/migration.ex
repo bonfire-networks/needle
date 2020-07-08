@@ -153,8 +153,8 @@ defmodule Pointers.Migration do
   #Insert a Table record. Not required when using `create_pointable_table`
   @doc false
   def insert_table_record(id, name) do
-    id = Pointers.ULID.cast!(id)
-    name = table_name(name)
+     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id)) 
+     name = table_name(name)
     opts = [on_conflict: [set: [id: id]], conflict_target: [:table]]
     repo().insert_all(Config.table_table(), [%{id: id, table: name}], opts)
   end
