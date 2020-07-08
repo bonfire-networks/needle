@@ -10,12 +10,11 @@ defmodule Pointers.Pointer do
   schema_module = __MODULE__
   default = "pointers_pointer"
 
-    Pointers.Config.schema_source(schema_module, default)
 
     IO.inspect(p_schema_table_for: schema_module)
     config = Application.get_env(:pointers, schema_module, [])
     IO.inspect(p_module_config: config)
-    table = config |> Keyword.get(:source, default)
+    table = config |> Keyword.get(:source, Application.get_env(:pointers, :pointer_table, default))
     IO.inspect(p_source: table)
     
   
