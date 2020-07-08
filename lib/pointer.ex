@@ -8,10 +8,20 @@ defmodule Pointers.Pointer do
   alias Pointers.{Pointer, Table, Tables, ULID}
   
   schema_module = __MODULE__
+  default = "pointers_pointer"
+
+    Pointers.Config.schema_source(schema_module, default)
+
+    IO.inspect(p_schema_table_for: schema_module)
+    config = Application.get_env(:pointers, schema_module, [])
+    IO.inspect(p_module_config: config)
+    table = config |> Keyword.get(:source, default)
+    IO.inspect(p_source: table)
+    
   
   @primary_key {:id, ULID, autogenerate: false}
   @foreign_key_type ULID
-  schema(Pointers.Config.schema_source(schema_module, "pointers_pointer")) do
+  schema(table) do
     belongs_to :table, Table
     field :pointed, :any, virtual: true
   end
