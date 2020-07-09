@@ -7,16 +7,17 @@ defmodule Pointers.Util do
   def get_source(opts), do: check_source(Keyword.get(opts, :source))
 
   defp check_source(x) when is_binary(x), do: x
-  defp check_source(_), do: raise ArgumentError, message: @bad_source
+  defp check_source(_), do: raise(ArgumentError, message: @bad_source)
 
   def get_otp_app(opts), do: check_otp_app(Keyword.get(opts, :otp_app))
 
-  defp check_otp_app(x) when is_atom(x),
-    do: check_otp_app_loaded(x, Application.ensure_loaded(x))
-  defp check_otp_app(_), do: raise ArgumentError, message: @bad_otp_app
+  defp check_otp_app(x) when is_atom(x), do: x
+  # do: check_otp_app_loaded(x, Application.ensure_loaded(x))
+
+  defp check_otp_app(_), do: raise(ArgumentError, message: @bad_otp_app)
 
   defp check_otp_app_loaded(x, :ok), do: x
-  defp check_otp_app_loaded(_, _), do: raise ArgumentError, message: @bad_otp_app
+  defp check_otp_app_loaded(_, _), do: raise(ArgumentError, message: @bad_otp_app)
 
   def put_new_attribute(module, attribute, value) do
     if not Module.has_attribute?(module, attribute),
@@ -26,5 +27,4 @@ defmodule Pointers.Util do
   # defaults @foreign_key_type
   def schema_foreign_key_type(module),
     do: put_new_attribute(module, :foreign_key_type, Pointers.ULID)
-
 end
