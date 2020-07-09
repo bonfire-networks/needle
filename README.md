@@ -324,6 +324,7 @@ one of the simpler options to work with.
 * `mix pointers.gen.migration.init` task to generate an init migration.
 * `mix pointers.gen.schema.pointable` task to generate a pointable schema.
 * `mix pointers.gen.schema.mixin` task to generate a mixin schema.
+* Make sure table names are configurable when doing an OTP release
 
 ## Copyright and License
 
