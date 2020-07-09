@@ -15,16 +15,4 @@ defmodule Pointers.Changeset do
     with {:ok, cs} <- relate(new, changeset, from_field, to_field), do: repo.insert(cs)
   end
 
-  def operate(object, app, module, operation, attrs, defaults) do
-    config = Application.fetch_env!(app, module) ++ defaults
-    conf_op = Keyword.get(config, operation, [])
-    default_op = Keyword.get(defaults, operation, [])
-    op = conf_op ++ default_op
-    cast = Keyword.fetch!(op, :cast)
-    required = Keyword.fetch!(op, :required)
-    object
-    |> Changeset.cast(object, attrs, cast)
-    |> Changeset.validate_required(required)
-  end 
-
 end
