@@ -88,7 +88,9 @@ defmodule Pointers.Pointable do
   # defines __pointable__
   defp emit_pointable(config) do
     table_id = Pointers.ULID.cast!(Keyword.fetch!(config, :table_id))
-    [ pointable_clause(:table_id, table_id) ]
+    otp_app = Keyword.fetch!(config, :otp_app)
+    [ pointable_clause(:table_id, table_id),
+      pointable_clause(:otp_app, otp_app) ]
   end
 
   defp pointable_clause(arg, value) do
