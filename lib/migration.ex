@@ -22,10 +22,11 @@ defmodule Pointers.Migration do
   be deleted when the thing it's pointing to is deleted.
   """
   def strong_pointer(table \\ Pointer) do
-    references table.__schema__(:source),
+    references(table.__schema__(:source),
       type: :uuid,
       on_update: :update_all,
       on_delete: :delete_all
+    )
   end
 
   @doc """
@@ -33,10 +34,11 @@ defmodule Pointers.Migration do
   be set null when the thing it's pointing to is deleted.
   """
   def weak_pointer(table \\ Pointer) do
-    references table.__schema__(:source),
+    references(table.__schema__(:source),
       type: :uuid,
       on_update: :update_all,
       on_delete: :nilify_all
+    )
   end
 
   @doc """
@@ -44,10 +46,11 @@ defmodule Pointers.Migration do
   pointer will prevent the thing it's pointing to from being deleted.
   """
   def unbreakable_pointer(table \\ Pointer) do
-    references table.__schema__(:source),
+    references(table.__schema__(:source),
       type: :uuid,
       on_update: :update_all,
       on_delete: :restrict
+    )
   end
 
   defp table_name(name) when is_atom(name), do: Atom.to_string(name)
@@ -66,21 +69,25 @@ defmodule Pointers.Migration do
 
   @spec add_pointer_ref_pk() :: nil
   def add_pointer_ref_pk(),
-    do: add(:id, strong_pointer(Pointer.__schema__(:table)), primary_key: true)
+    do: add(:id, strong_pointer(), primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
   @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
-  @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
+  @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t(), body :: term) ::
+          term
   defmacro create_pointable_table(name, id, opts \\ [], body) do
     ULID.cast!(id)
     opts = [primary_key: false] ++ opts
+
     quote do
       Pointers.Migration.insert_table_record(unquote(id), unquote(name))
       table = Ecto.Migration.table(unquote(name), unquote(opts))
+
       Ecto.Migration.create_if_not_exists table do
         Pointers.Migration.add_pointer_pk()
         unquote(body)
       end
+
       Pointers.Migration.create_pointer_trigger(unquote(name))
     end
   end
@@ -96,8 +103,10 @@ defmodule Pointers.Migration do
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
   defmacro create_mixin_table(name, opts \\ [], body) do
     opts = [primary_key: false] ++ opts
+
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
+
       Ecto.Migration.create_if_not_exists table do
         Pointers.Migration.add_pointer_ref_pk()
         unquote(body)
@@ -124,16 +133,24 @@ defmodule Pointers.Migration do
   def init_pointers(:up) do
     create_if_not_exists table(Table.__schema__(:source), primary_key: false) do
       add_pointer_pk()
-      add :table, :text, null: false
+      add(:table, :text, null: false)
     end
+
     create_if_not_exists table(Pointer.__schema__(:source), primary_key: false) do
       add_pointer_pk()
-      ref = references Table.__schema__(:source),
-        on_delete: :delete_all, on_update: :update_all, type: :uuid
-      add :table_id, ref, null: false
+
+      ref =
+        references(Table.__schema__(:source),
+          on_delete: :delete_all,
+          on_update: :update_all,
+          type: :uuid
+        )
+
+      add(:table_id, ref, null: false)
     end
-    create_if_not_exists unique_index(Table.__schema__(:source), :table)
-    create_if_not_exists index(Pointer.__schema__(:table), :table_id)
+
+    create_if_not_exists(unique_index(Table.__schema__(:source), :table))
+    create_if_not_exists(index(Pointer.__schema__(:table), :table_id))
     flush()
     insert_table_record(Table.__pointable__(:table_id), Table.__schema__(:source))
     create_pointer_trigger_function()
@@ -144,57 +161,61 @@ defmodule Pointers.Migration do
   def init_pointers(:down) do
     drop_pointer_trigger(Table.__schema__(:source))
     drop_pointer_trigger_function()
-    drop_if_exists index(Pointer.__schema__(:table), :table_id)
-    drop_if_exists index(Table.__schema__(:source), :table)
+    drop_if_exists(index(Pointer.__schema__(:table), :table_id))
+    drop_if_exists(index(Table.__schema__(:source), :table))
     drop_table(Pointer.__schema__(:table))
     drop_table(Table.__schema__(:source))
   end
 
   @doc false
   def create_pointer_trigger_function() do
-    :ok = execute """
-    create or replace function #{@trigger_function}() returns trigger as $$
-    declare table_id uuid;
-    begin
-      select id into table_id from #{Table.__schema__(:source)}
-        where #{Table.__schema__(:source)}.table = TG_TABLE_NAME;
-      if table_id is null then
-        raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
-      end if;
-      insert into #{Pointer.__schema__(:table)} (id, table_id) values (NEW.id, table_id)
-      on conflict do nothing;
-      return NEW;
-    end;
-    $$ language plpgsql
-    """
+    :ok =
+      execute("""
+      create or replace function #{@trigger_function}() returns trigger as $$
+      declare table_id uuid;
+      begin
+        select id into table_id from #{Table.__schema__(:source)}
+          where #{Table.__schema__(:source)}.table = TG_TABLE_NAME;
+        if table_id is null then
+          raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
+        end if;
+        insert into #{Pointer.__schema__(:table)} (id, table_id) values (NEW.id, table_id)
+        on conflict do nothing;
+        return NEW;
+      end;
+      $$ language plpgsql
+      """)
   end
 
   @doc false
   def drop_pointer_trigger_function() do
-    execute "drop function if exists #{@trigger_function}() cascade"
+    execute("drop function if exists #{@trigger_function}() cascade")
   end
 
   @doc false
   def create_pointer_trigger(table) do
     table = table_name(table)
-    drop_pointer_trigger(table) # because there is no create trigger if not exists
-    execute """
+    # because there is no create trigger if not exists
+    drop_pointer_trigger(table)
+
+    execute("""
     create trigger "#{@trigger_prefix}#{table}"
     before insert on "#{table}"
     for each row
     execute procedure #{@trigger_function}()
-    """
+    """)
   end
 
   @doc false
   def drop_pointer_trigger(table) do
     table = table_name(table)
-    execute """
+
+    execute("""
     drop trigger if exists "#{@trigger_prefix}#{table}" on "#{table}"
-    """
+    """)
   end
 
-  #Insert a Table record. Not required when using `create_pointable_table`
+  # Insert a Table record. Not required when using `create_pointable_table`
   @doc false
   def insert_table_record(id, name) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
@@ -203,13 +224,12 @@ defmodule Pointers.Migration do
     repo().insert_all(Table.__schema__(:source), [%{id: id, table: name}], opts)
   end
 
-  #Delete a Table record. Not required when using `drop_pointable_table`
+  # Delete a Table record. Not required when using `drop_pointable_table`
   @doc false
   def delete_table_record(id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
-    repo().delete_all(from t in Table.__schema__(:source), where: t.id == ^id)
+    repo().delete_all(from(t in Table.__schema__(:source), where: t.id == ^id))
   end
-  
-  def drop_table(name), do: execute "drop table if exists #{name} cascade"
 
+  def drop_table(name), do: execute("drop table if exists #{name} cascade")
 end
