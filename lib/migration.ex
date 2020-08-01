@@ -179,6 +179,9 @@ defmodule Pointers.Migration do
         if table_id is null then
           raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
         end if;
+        if NEW.id is null then
+          raise exception 'The new row has no pointer ID to insert :(';
+        end if;
         insert into #{Pointer.__schema__(:table)} (id, table_id) values (NEW.id, table_id)
         on conflict do nothing;
         return NEW;
