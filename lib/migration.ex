@@ -150,7 +150,7 @@ defmodule Pointers.Migration do
     end
 
     create_if_not_exists(unique_index(Table.__schema__(:source), :table))
-    create_if_not_exists(index(Pointer.__schema__(:table), :table_id))
+    create_if_not_exists(index(Pointer.__schema__(:source), :table_id))
     flush()
     insert_table_record(Table.__pointable__(:table_id), Table.__schema__(:source))
     create_pointer_trigger_function()
@@ -161,9 +161,9 @@ defmodule Pointers.Migration do
   def init_pointers(:down) do
     drop_pointer_trigger(Table.__schema__(:source))
     drop_pointer_trigger_function()
-    drop_if_exists(index(Pointer.__schema__(:table), :table_id))
+    drop_if_exists(index(Pointer.__schema__(:source), :table_id))
     drop_if_exists(index(Table.__schema__(:source), :table))
-    drop_table(Pointer.__schema__(:table))
+    drop_table(Pointer.__schema__(:source))
     drop_table(Table.__schema__(:source))
   end
 
@@ -182,7 +182,7 @@ defmodule Pointers.Migration do
         if NEW.id is null then
           raise exception 'The new row has no pointer ID to insert :(';
         end if;
-        insert into #{Pointer.__schema__(:table)} (id, table_id) values (NEW.id, table_id)
+        insert into #{Pointer.__schema__(:source)} (id, table_id) values (NEW.id, table_id)
         on conflict do nothing;
         return NEW;
       end;
