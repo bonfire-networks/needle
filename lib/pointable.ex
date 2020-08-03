@@ -60,10 +60,10 @@ defmodule Pointers.Pointable do
     otp_app = Keyword.fetch!(options, :otp_app)
     config = Application.get_env(otp_app, module, [])
     source = Util.get_source(config ++ options)
-    schema_primary_key(module, options)
-    Util.schema_foreign_key_type(module)
-    Util.put_new_attribute(module, :timestamps_opts, @default_timestamps_opts)
     quote do
+      unquote(schema_primary_key(module, options))
+      unquote(Util.schema_foreign_key_type(module))
+      unquote(Util.put_new_attribute(module, :timestamps_opts, @default_timestamps_opts))
       schema unquote(source) do
         unquote(body)
         Flexto.flex_schema(unquote(otp_app))
@@ -80,8 +80,10 @@ defmodule Pointers.Pointable do
   end
 
   defp schema_pk(nil, module, autogenerate) do
-    data = {:id, Pointers.ULID, autogenerate: autogenerate}
-    Module.put_attribute(module, :primary_key, data)
+    data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
+    quote do
+      @primary_key unquote(data)
+    end
   end
   defp schema_pk(_, _, _), do: :ok
 

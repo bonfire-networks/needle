@@ -15,8 +15,14 @@ defmodule Pointers.Util do
   defp check_otp_app(_), do: raise ArgumentError, message: @bad_otp_app
 
   def put_new_attribute(module, attribute, value) do
-    if not Module.has_attribute?(module, attribute),
-      do: Module.put_attribute(module, attribute, value)
+    if not Module.has_attribute?(module, attribute) do
+      quote do
+        Module.put_attribute(unquote(module), unquote(attribute), unquote(value))
+      end
+    else
+      quote do
+      end
+    end
   end
 
   def schema_foreign_key_type(module),

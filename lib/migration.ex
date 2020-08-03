@@ -66,7 +66,7 @@ defmodule Pointers.Migration do
 
   @spec add_pointer_ref_pk() :: nil
   def add_pointer_ref_pk(),
-    do: add(:id, strong_pointer(Pointer.__schema__(:table)), primary_key: true)
+    do: add(:id, strong_pointer(Pointer), primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
   @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
@@ -133,7 +133,7 @@ defmodule Pointers.Migration do
       add :table_id, ref, null: false
     end
     create_if_not_exists unique_index(Table.__schema__(:source), :table)
-    create_if_not_exists index(Pointer.__schema__(:table), :table_id)
+    create_if_not_exists index(Pointer.__schema__(:source), :table_id)
     flush()
     insert_table_record(Table.__pointable__(:table_id), Table.__schema__(:source))
     create_pointer_trigger_function()
@@ -144,9 +144,9 @@ defmodule Pointers.Migration do
   def init_pointers(:down) do
     drop_pointer_trigger(Table.__schema__(:source))
     drop_pointer_trigger_function()
-    drop_if_exists index(Pointer.__schema__(:table), :table_id)
+    drop_if_exists index(Pointer.__schema__(:source), :table_id)
     drop_if_exists index(Table.__schema__(:source), :table)
-    drop_table(Pointer.__schema__(:table))
+    drop_table(Pointer.__schema__(:source))
     drop_table(Table.__schema__(:source))
   end
 
@@ -161,7 +161,7 @@ defmodule Pointers.Migration do
       if table_id is null then
         raise exception 'Table % does not participate in the pointers abstraction', TG_TABLE_NAME;
       end if;
-      insert into #{Pointer.__schema__(:table)} (id, table_id) values (NEW.id, table_id)
+      insert into #{Pointer.__schema__(:source)} (id, table_id) values (NEW.id, table_id)
       on conflict do nothing;
       return NEW;
     end;
