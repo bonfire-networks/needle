@@ -4,7 +4,7 @@ defmodule Pointers.MixProject do
   def project do
     [
       app: :pointers,
-      version: "0.3.0",
+      version: "0.3.1",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       description: "Ecto's missing universal foreign key",

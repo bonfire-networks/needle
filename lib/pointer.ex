@@ -18,11 +18,13 @@ defmodule Pointers.Pointer do
     field :pointed, :any, virtual: true
   end
 
+  @doc "Changeset for creating a Pointer"
   def create(id \\ Pointers.ULID.generate(), table) do
     table_id = Tables.id!(table)
     Changeset.cast(%Pointer{}, %{id: id, table_id: table_id}, [:id, :table_id])
   end
 
+  @doc "Changeset for updating which table a Pointer points to."
   def repoint(%Pointer{}=pointer, table) do
     table_id = Tables.id!(table)
     Changeset.cast(pointer, %{table_id: table_id}, [:table_id])

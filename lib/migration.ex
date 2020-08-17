@@ -69,25 +69,52 @@ defmodule Pointers.Migration do
     do: add(:id, strong_pointer(Pointer), primary_key: true)
 
   @doc "Creates a pointable table along with its trigger."
-  @spec create_pointable_table(name :: binary, id :: binary, body :: term) :: term
-  @spec create_pointable_table(name :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
-  defmacro create_pointable_table(name, id, opts \\ [], body) do
-    ULID.cast!(id)
+  @spec create_pointable_table(schema :: atom, body :: term) :: term
+  @spec create_pointable_table(schema :: atom, opts :: Keyword.t, body :: term) :: term
+  @spec create_pointable_table(source :: binary, id :: binary, body :: term) :: term
+  @spec create_pointable_table(source :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
+  defmacro create_pointable_table(a, b), do: cpt(a, b)
+  defmacro create_pointable_table(a, b, c), do: cpt(a, b, c)
+  defmacro create_pointable_table(a, b, c, d), do: cpt(a, b, c, d)
+
+  defp cpt(schema, body) when is_atom(schema) do
+    source = schema.__schema__(:source)
+    id = schema.__pointable__(:table_id)
+    cpt(source, id, [], body)
+  end
+  defp cpt(schema, opts, body) when is_atom(schema) and is_list(opts) do
+    source = schema.__schema__(:source)
+    id = schema.__pointable__(:table_id)
+    cpt(source, id, opts, body)
+  end
+  defp cpt(source, id, body) when is_binary(source) and is_binary(id) do
+    cpt(source, id, [], body)
+  end
+  defp cpt(source, id, opts, body) when is_binary(source) and is_binary(id) and is_list(opts) do
+    Pointers.ULID.cast!(id)
     opts = [primary_key: false] ++ opts
     quote do
-      Pointers.Migration.insert_table_record(unquote(id), unquote(name))
-      table = Ecto.Migration.table(unquote(name), unquote(opts))
+      Pointers.Migration.insert_table_record(unquote(id), unquote(source))
+      table = Ecto.Migration.table(unquote(source), unquote(opts))
       Ecto.Migration.create_if_not_exists table do
         Pointers.Migration.add_pointer_pk()
         unquote(body)
       end
-      Pointers.Migration.create_pointer_trigger(unquote(name))
+      Pointers.Migration.create_pointer_trigger(unquote(source))
     end
   end
 
   @doc "Drops a pointable table"
+  @spec drop_pointable_table(schema :: atom) :: nil
   @spec drop_pointable_table(name :: binary, id :: binary) :: nil
-  def drop_pointable_table(name, id) do
+  def drop_pointable_table(schema) when is_binary(schema) do
+    source = schema.__schema__(:source)
+    id = schema.__pointable__(:table_id)
+    drop_pointable_table(source, id)
+  end
+
+  def drop_pointable_table(name, id) when is_binary(name) and is_binary(id) do
+    Pointers.ULID.cast!(id)
     drop_pointer_trigger(name)
     delete_table_record(id)
     drop_table(name)
@@ -95,6 +122,10 @@ defmodule Pointers.Migration do
 
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
   defmacro create_mixin_table(name, opts \\ [], body) do
+    name = cond do
+      is_binary(name) -> name
+      is_atom(name) -> name.__schema__(:source)
+    end
     opts = [primary_key: false] ++ opts
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
@@ -210,6 +241,12 @@ defmodule Pointers.Migration do
     repo().delete_all(from t in Table.__schema__(:source), where: t.id == ^id)
   end
   
-  def drop_table(name), do: execute "drop table if exists #{name} cascade"
+  def drop_table(name) do
+    name = cond do
+      is_binary(name) -> name
+      is_atom(name) -> name.__schema__(:source)
+    end
+    execute "drop table if exists #{name} cascade"
+  end
 
 end
