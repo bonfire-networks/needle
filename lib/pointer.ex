@@ -6,6 +6,7 @@ defmodule Pointers.Pointer do
   use Ecto.Schema
   alias Ecto.Changeset
   alias Pointers.{Pointer, Table, Tables, ULID}
+  require Flexto
 
   table =
     Application.get_env(:pointers, __MODULE__, [])
@@ -16,6 +17,7 @@ defmodule Pointers.Pointer do
   schema(table) do
     belongs_to :table, Table
     field :pointed, :any, virtual: true
+    Flexto.flex_schema(:pointers)
   end
 
   @doc "Changeset for creating a Pointer"
