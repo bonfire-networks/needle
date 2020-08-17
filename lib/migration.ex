@@ -74,21 +74,21 @@ defmodule Pointers.Migration do
   @spec create_pointable_table(source :: binary, id :: binary, body :: term) :: term
   @spec create_pointable_table(source :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
   defmacro create_pointable_table(a, b) do
-    a = Code.eval_quoted(__ENV__, a)
-    b = Code.eval_quoted(__ENV__, b)
+    a = Code.eval_quoted(a, [], __ENV__)
+    b = Code.eval_quoted(b, [], __ENV__)
     cpt(a, b)
   end
   defmacro create_pointable_table(a, b, c) do
-    a = Code.eval_quoted(__ENV__, a)
-    b = Code.eval_quoted(__ENV__, b)
-    c = Code.eval_quoted(__ENV__, c)
+    a = Code.eval_quoted(a, [], __ENV__)
+    b = Code.eval_quoted(b, [], __ENV__)
+    c = Code.eval_quoted(c, [], __ENV__)
     cpt(a, b, c)
   end
   defmacro create_pointable_table(a, b, c, d) do
-    a = Code.eval_quoted(__ENV__, a)
-    b = Code.eval_quoted(__ENV__, b)
-    c = Code.eval_quoted(__ENV__, c)
-    d = Code.eval_quoted(__ENV__, d)
+    a = Code.eval_quoted(a, [], __ENV__)
+    b = Code.eval_quoted(b, [], __ENV__)
+    c = Code.eval_quoted(c, [], __ENV__)
+    d = Code.eval_quoted(d, [], __ENV__)
     cpt(a, b, c, d)
   end
 
@@ -137,7 +137,7 @@ defmodule Pointers.Migration do
 
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
   defmacro create_mixin_table(name, opts \\ [], body) do
-    name = Code.eval_quoted(__ENV__, name)
+    name = Code.eval_quoted(name, [], __ENV__)
     name = cond do
       is_binary(name) -> name
       is_atom(name) ->
