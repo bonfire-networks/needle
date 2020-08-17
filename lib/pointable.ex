@@ -76,16 +76,16 @@ defmodule Pointers.Pointable do
   # defaults @primary_key
   defp schema_primary_key(module, opts) do
     autogen = Keyword.get(opts, :autogenerate, true)
-    schema_pk(Module.get_attribute(module, :primary_key), module, autogen)
+    schema_pk(Module.get_attribute(module, :primary_key), autogen)
   end
 
-  defp schema_pk(nil, module, autogenerate) do
+  defp schema_pk(nil, autogenerate) do
     data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
     quote do
       @primary_key unquote(data)
     end
   end
-  defp schema_pk(_, _, _), do: :ok
+  defp schema_pk(_, _), do: :ok
 
   # defines __pointable__
   defp emit_pointable(config) do
