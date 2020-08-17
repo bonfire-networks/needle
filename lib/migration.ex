@@ -75,20 +75,17 @@ defmodule Pointers.Migration do
   @spec create_pointable_table(source :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
   defmacro create_pointable_table(a, b) do
     {a, _} = Code.eval_quoted(a, [], __ENV__)
-    {b, _} = Code.eval_quoted(b, [], __ENV__)
     cpt(a, b)
   end
   defmacro create_pointable_table(a, b, c) do
     {a, _} = Code.eval_quoted(a, [], __ENV__)
     {b, _} = Code.eval_quoted(b, [], __ENV__)
-    {c, _} = Code.eval_quoted(c, [], __ENV__)
     cpt(a, b, c)
   end
   defmacro create_pointable_table(a, b, c, d) do
     {a, _} = Code.eval_quoted(a, [], __ENV__)
     {b, _} = Code.eval_quoted(b, [], __ENV__)
     {c, _} = Code.eval_quoted(c, [], __ENV__)
-    {d, _} = Code.eval_quoted(d, [], __ENV__)
     cpt(a, b, c, d)
   end
 
