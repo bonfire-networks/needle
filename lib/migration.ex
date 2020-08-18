@@ -74,18 +74,18 @@ defmodule Pointers.Migration do
   @spec create_pointable_table(source :: binary, id :: binary, body :: term) :: term
   @spec create_pointable_table(source :: binary, id :: binary, opts :: Keyword.t, body :: term) :: term
   defmacro create_pointable_table(a, b) do
-    {a, _} = Code.eval_quoted(a, [], __CALLER__)
+    {a, _} = eval_expand(a, __CALLER__)
     cpt(a, b)
   end
   defmacro create_pointable_table(a, b, c) do
-    {a, _} = Code.eval_quoted(a, [], __CALLER__)
-    {b, _} = Code.eval_quoted(b, [], __CALLER__)
+    {a, _} = eval_expand(a, __CALLER__)
+    {b, _} = eval_expand(b, __CALLER__)
     cpt(a, b, c)
   end
   defmacro create_pointable_table(a, b, c, d) do
-    {a, _} = Code.eval_quoted(a, [], __CALLER__)
-    {b, _} = Code.eval_quoted(b, [], __CALLER__)
-    {c, _} = Code.eval_quoted(c, [], __CALLER__)
+    {a, _} = eval_expand(a, __CALLER__)
+    {b, _} = eval_expand(b, __CALLER__)
+    {c, _} = eval_expand(c, __CALLER__)
      cpt(a, b, c, d)
   end
 
@@ -134,7 +134,7 @@ defmodule Pointers.Migration do
 
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
   defmacro create_mixin_table(name, opts \\ [], body) do
-    {name, _} = Code.eval_quoted(name, [], __CALLER__)
+    {name, _} = eval_expand(name, __CALLER__)
     name = cond do
       is_binary(name) -> name
       is_atom(name) ->
@@ -264,5 +264,16 @@ defmodule Pointers.Migration do
     end
     execute "drop table if exists #{name} cascade"
   end
+
+  defp eval(quoted, env) do
+    Code.eval_quoted(quoted, [], env)
+  end
+  
+  defp eval_expand(quoted, env), do: expand_alias(eval(quoted, env), env)
+
+  defp expand_alias({:__aliases__, _, _} = ast, env),
+    do: Macro.expand(ast, env) 
+  defp expand_alias(ast, _env),
+    do: ast
 
 end
