@@ -4,6 +4,15 @@ defmodule Pointers.Util do
   @bad_source "You must provide a binary :source option."
   @bad_otp_app "You must provide a valid atom :otp_app option."
 
+  def rename(map, changes) do
+    Enum.reduce(changes, map, fn {k, l}, map ->
+      case map do
+        %{^k => v} -> Map.put(Map.delete(map, k), l, v)
+        _ -> map
+      end
+    end)
+  end
+
   def get_source(opts), do: check_source(Keyword.get(opts, :source))
 
   defp check_source(x) when is_binary(x), do: x
