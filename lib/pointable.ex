@@ -31,6 +31,7 @@ defmodule Pointers.Pointable do
     quote do
       use Ecto.Schema
       require Flexto
+      require Pointers.Changesets
       import Pointers.Pointable
       unquote_splicing(pointable)
     end

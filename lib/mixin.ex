@@ -17,6 +17,7 @@ defmodule Pointers.Mixin do
     Module.put_attribute(module, __MODULE__, options)
     quote do
       use Ecto.Schema
+      require Pointers.Changesets
       import Flexto
       import Pointers.Mixin
     end
