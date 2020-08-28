@@ -60,6 +60,16 @@ defmodule Pointers.Changesets do
   end
   def replicate_map_valid_change(changeset, _, _, _), do: changeset
 
+  def validate_length(changeset, attrs, config, key, opts_key, default) do
+    if Map.has_key?(changeset.changes, key),
+      do: vl(config(config, attrs, opts_key, default), key, changeset),
+      else: changeset
+  end
+
+  defp vl(nil, _key, changeset), do: changeset
+  defp vl([], _key, changeset), do: changeset
+  defp vl(opts, key, changeset),do: Changeset.validate_length(changeset, key, opts)
+
   defp config(config, attrs, key, default),
     do: attrs[key] || Keyword.get(config, key, default)
 
