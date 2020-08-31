@@ -12,14 +12,17 @@ defmodule Pointers.Mixin do
 
   def using(nil, _options), do: raise CompileError, description: @must_be_in_module
   def using(module, options) do
-    Util.get_otp_app(options)
+    otp_app = Util.get_otp_app(options)
     Util.get_source(options)
+    config = Application.get_env(otp_app, module, [])
     Module.put_attribute(module, __MODULE__, options)
+    pointers = emit_pointers(config ++ options)
     quote do
       use Ecto.Schema
       require Pointers.Changesets
       import Flexto
       import Pointers.Mixin
+      unquote_splicing(pointers)
     end
   end
 
@@ -56,5 +59,13 @@ defmodule Pointers.Mixin do
   end
 
   defp schema_check_attr(_, _, _), do: raise ArgumentError, message: @must_use
+
+  # defines __pointers__
+  defp emit_pointers(config) do
+    otp_app = Keyword.fetch!(config, :otp_app)
+    [ Util.pointers_clause(:role, :mixin),
+      Util.pointers_clause(:otp_app, otp_app)
+    ]
+  end
 
 end

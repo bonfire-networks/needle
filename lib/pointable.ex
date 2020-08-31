@@ -9,6 +9,33 @@ defmodule Pointers.Pointable do
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of table in database
     table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid ULID to identify table
+
+  pointable_schema do
+    # ... fields go here, if any
+  end
+
+  ## Overriding with configuration
+
+  During `use` (i.e. compilation time), we will attempt to load
+  configuration from the provided `:otp_app` under the key of the
+  current module. Any values provided here will override the defaults
+  provided to `use`. This allows you to configure them after the fact.
+
+  Additionally, pointables use `Flexto`'s `flex_schema()`, so you can
+  provide additional configuration for those in the same place.
+
+  I shall say it again because it's important: This happens at
+  *compile time*. You must rebuild the app containing the pointable
+  whenever the configuration changes.
+
+  ## Introspection
+
+  Defines a function `__pointers__/1` to introspect data. Recognised
+  parameters:
+
+  `:role` - `:pointable`
+  `:table_id` - retrieves the ULID id of the pointable table.
+  `:otp_app` - retrieves the OTP application to which this belongs.
   ```
   """
 
@@ -27,13 +54,13 @@ defmodule Pointers.Pointable do
     app = Keyword.fetch!(options, :otp_app)
     Module.put_attribute(module, __MODULE__, options)
     config = Application.get_env(app, module, [])
-    pointable = emit_pointable(config ++ options)
+    pointers = emit_pointers(config ++ options)
     quote do
       use Ecto.Schema
       require Flexto
       require Pointers.Changesets
       import Pointers.Pointable
-      unquote_splicing(pointable)
+      unquote_splicing(pointers)
     end
   end
 
@@ -88,18 +115,14 @@ defmodule Pointers.Pointable do
   end
   defp schema_pk(_, _), do: :ok
 
-  # defines __pointable__
-  defp emit_pointable(config) do
+  # defines __pointers__
+  defp emit_pointers(config) do
     table_id = Pointers.ULID.cast!(Keyword.fetch!(config, :table_id))
     otp_app = Keyword.fetch!(config, :otp_app)
-    [ pointable_clause(:table_id, table_id),
-      pointable_clause(:otp_app, otp_app) ]
-  end
-
-  defp pointable_clause(arg, value) do
-    quote do
-      def __pointable__(unquote(arg)), do: unquote(value)
-    end
+    [ Util.pointers_clause(:role, :pointable),
+      Util.pointers_clause(:table_id, table_id),
+      Util.pointers_clause(:otp_app, otp_app),
+    ]
   end
 
 end

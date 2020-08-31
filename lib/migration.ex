@@ -91,12 +91,12 @@ defmodule Pointers.Migration do
 
   defp cpt(schema, body) when is_atom(schema) do
     source = schema.__schema__(:source)
-    id = schema.__pointable__(:table_id)
+    id = schema.__pointers__(:table_id)
     cpt(source, id, [], body)
   end
   defp cpt(schema, opts, body) when is_atom(schema) and is_list(opts) do
     source = schema.__schema__(:source)
-    id = schema.__pointable__(:table_id)
+    id = schema.__pointers__(:table_id)
     cpt(source, id, opts, body)
   end
   defp cpt(source, id, body) when is_binary(source) and is_binary(id) do
@@ -121,7 +121,7 @@ defmodule Pointers.Migration do
   @spec drop_pointable_table(name :: binary, id :: binary) :: nil
   def drop_pointable_table(schema) when is_atom(schema) do
     source = schema.__schema__(:source)
-    id = schema.__pointable__(:table_id)
+    id = schema.__pointers__(:table_id)
     drop_pointable_table(source, id)
   end
 
@@ -182,7 +182,7 @@ defmodule Pointers.Migration do
     create_if_not_exists unique_index(Table.__schema__(:source), :table)
     create_if_not_exists index(Pointer.__schema__(:source), :table_id)
     flush()
-    insert_table_record(Table.__pointable__(:table_id), Table.__schema__(:source))
+    insert_table_record(Table.__pointers__(:table_id), Table.__schema__(:source))
     create_pointer_trigger_function()
     flush()
     create_pointer_trigger(Table.__schema__(:source))
