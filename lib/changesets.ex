@@ -152,8 +152,8 @@ defmodule Pointers.Changesets do
 
   @doc """
   """
-  def mixin_changeset(changeset, key, attrs, opts \\ [])
-  def mixin_changeset(%Changeset{data: %schema{}=data}, key, attrs, opts) do
+  def assoc_changeset(changeset, key, attrs, opts \\ [])
+  def assoc_changeset(%Changeset{data: %schema{}=data}, key, attrs, opts) do
     case schema.__schema__(:association, key) do
       %Has{
         cardinality: :one,
@@ -162,29 +162,29 @@ defmodule Pointers.Changesets do
         related_key: :id,
         relationship: :child,
       } ->
-        mc(verb(data), data, key, related, attrs, opts)
+        ac(verb(data), data, key, related, attrs, opts)
 
       _ ->
-        raise ArgumentError, message: "mixin_changeset only supports mixins!"
+        raise ArgumentError, message: "assoc_changeset only supports `has_one` at present!"
     end
   end
 
-  defp mc(:create, %_{}, _, related, attrs, opts),
-    do: mc_call(related, [struct(related), attrs], opts)
+  defp ac(:create, %_{}, _, related, attrs, opts),
+    do: ac_call(related, [struct(related), attrs], opts)
 
-  defp mc(:update, %_{}=data, key, related, attrs, opts) do
+  defp ac(:update, %_{}=data, key, related, attrs, opts) do
     case Map.get(data, key) do
       %NotLoaded{} ->
         raise ArgumentError,
-          message: "You must preload a mixin before casting to it (or set it to nil)."
+          message: "You must preload an assoc before casting to it (or set it to nil)."
 
-      %_{}=other -> mc_call(related, [other, attrs], opts)
-      nil -> mc_call(related, [struct(related), attrs], opts)
+      %_{}=other -> ac_call(related, [other, attrs], opts)
+      nil -> ac_call(related, [struct(related), attrs], opts)
     end
   end
 
-  defp mc_call(schema, args, []), do: call(schema, :changeset, args)
-  defp mc_call(schema, args, opts), do: call_extra(schema, :changeset, args, [opts])
+  defp ac_call(schema, args, []), do: call(schema, :changeset, args)
+  defp ac_call(schema, args, opts), do: call_extra(schema, :changeset, args, [opts])
 
   def put_assoc(changeset, key, mixin_changeset)
 
@@ -194,8 +194,8 @@ defmodule Pointers.Changesets do
   def put_assoc(%Changeset{}=cs, _, %Changeset{valid?: false}=mixin),
     do: %{ cs | valid?: false, errors: cs.errors ++ mixin.errors }
 
-  def cast_mixin(%Changeset{}=cs, key, attrs, opts \\ []),
-    do:  put_assoc(cs, key, mixin_changeset(cs, key, attrs, opts))
+  def cast_assoc(%Changeset{}=cs, key, attrs, opts \\ []),
+    do:  put_assoc(cs, key, assoc_changeset(cs, key, attrs, opts))
 
   defp call_extra(module, func, args, extra) when is_list(extra) do
     Code.ensure_loaded(module)
@@ -221,6 +221,15 @@ defmodule Pointers.Changesets do
   def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
     errs = Keyword.get(options ++ config, :rename_attrs, [])
     %{ cs | errors: Util.rename(errors, Util.flip(errs)) }
+  end
+
+  def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
+    errs = Keyword.get(options ++ config, :rename_attrs, [])
+    %{ cs | errors: Util.rename(errors, Util.flip(errs)) }
+  end
+
+  def rewrite_child_errors(%Changeset{data: %what{}}=cs) do
+    rewrite_errors(cs, [], config_for(what))
   end
 
 end
