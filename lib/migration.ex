@@ -133,6 +133,7 @@ defmodule Pointers.Migration do
   end
 
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
+  @spec create_mixin_table(name :: atom | binary, opts :: list, body :: term) :: nil
   defmacro create_mixin_table(name, opts \\ [], body) do
     {name, _} = eval_expand(name, __CALLER__)
     name = cond do
@@ -152,9 +153,33 @@ defmodule Pointers.Migration do
     end
   end
 
-  @doc "Drops a mixin table. Actually just a simple cascading drop"
-  @spec drop_mixin_table(name :: binary) :: nil
+  @doc "Drops a mixin table."
+  @spec drop_mixin_table(name :: atom | binary) :: nil
   def drop_mixin_table(name), do: drop_table(name)
+
+  @doc "Creates a random table - one with a UUID v4 primary key."
+  defmacro create_random_table(name, opts \\ [], body) do
+    {name, _} = eval_expand(name, __CALLER__)
+    name = cond do
+      is_binary(name) -> name
+      is_atom(name) ->
+        if Code.ensure_loaded?(name),
+          do: name.__schema__(:source),
+          else: Atom.to_string(name)
+    end    
+    opts = [primary_key: false] ++ opts
+    quote do
+      table = Ecto.Migration.table(unquote(name), unquote(opts))
+      Ecto.Migration.create_if_not_exists table do
+        add :id, :uuid, primary_key: true
+        unquote(body)
+      end
+    end
+  end
+
+  @doc "Drops a random table."
+  @spec drop_random_table(name :: atom | binary) :: nil
+  def drop_random_table(name), do: drop_table(name)
 
   @doc """
   When migrating up: initialises the pointers database.

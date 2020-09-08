@@ -90,6 +90,7 @@ defmodule Pointers.Changesets do
   defp auto_format(changeset, _key, []), do: changeset
   defp auto_format(changeset, key, %Regex{}=format),
     do: Changeset.validate_format(changeset, key, format)
+
   defp auto_format(_changeset, key, invalid),
       do: throw {:invalid_format_regexp, regexp: invalid, key: key}
 
@@ -164,7 +165,8 @@ defmodule Pointers.Changesets do
       } ->
         ac(verb(data), data, key, related, attrs, opts)
 
-      _ ->
+      other ->
+        IO.inspect(other: other)
         raise ArgumentError, message: "assoc_changeset only supports `has_one` at present!"
     end
   end
@@ -217,11 +219,6 @@ defmodule Pointers.Changesets do
   defp c2(true, module, func, args), do: apply(module, func, args)
   defp c2(false, module, func, args),
     do: raise ArgumentError, message: "Function not found: #{module}.#{func}, args: #{inspect(args)}"
-
-  def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
-    errs = Keyword.get(options ++ config, :rename_attrs, [])
-    %{ cs | errors: Util.rename(errors, Util.flip(errs)) }
-  end
 
   def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
     errs = Keyword.get(options ++ config, :rename_attrs, [])
