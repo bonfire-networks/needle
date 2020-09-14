@@ -144,7 +144,8 @@ defmodule Pointers.Changesets do
 
   def config_for(module, key, default \\ []) do
     conf = config_for(module)
-    Keyword.get(conf, key, default) ++ conf
+    val = Keyword.get(conf, key, default)
+    if is_list(conf) and is_list(val), do: val ++ conf, else: val
   end
 
   @doc "true if the provided changeset or list of changesets is valid."
