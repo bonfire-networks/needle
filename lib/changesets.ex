@@ -167,7 +167,6 @@ defmodule Pointers.Changesets do
         ac(verb(data), data, key, related, attrs, opts)
 
       other ->
-        IO.inspect(other: other)
         raise ArgumentError, message: "assoc_changeset only supports `has_one` at present!"
     end
   end
@@ -218,8 +217,10 @@ defmodule Pointers.Changesets do
   end
 
   defp c2(true, module, func, args), do: apply(module, func, args)
-  defp c2(false, module, func, args),
-    do: raise ArgumentError, message: "Function not found: #{module}.#{func}, args: #{inspect(args)}"
+  defp c2(false, module, func, args) do
+    raise ArgumentError,
+      message: "Function not found: #{module}.#{func}, args: #{inspect(args)}"
+  end
 
   def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
     errs = Keyword.get(options ++ config, :rename_attrs, [])
@@ -229,5 +230,23 @@ defmodule Pointers.Changesets do
   def rewrite_child_errors(%Changeset{data: %what{}}=cs) do
     rewrite_errors(cs, [], config_for(what))
   end
+
+  def rewrite_constraint_errors(%Changeset{}=c) do
+    changes = Enum.reduce(c.changes, c.changes, &rce_changes/2)
+    errors = c.errors ++ Enum.flat_map(changes, &rce_errors/1)
+    {:error, %{ c | changes: changes, errors: errors }}
+  end
+
+  defp rce_changes({k, %Changeset{valid?: false}=v}, acc), do: Map.put(acc, k, rewrite_child_errors(v))
+  defp rce_changes(_, acc), do: acc
+
+  defp rce_errors({_, %Changeset{valid?: false, errors: e}}), do: e
+  defp rce_errors(_), do: []
+
+  def merge_child_errors(%Changeset{}=cs),
+    do: Enum.reduce(cs.changes, cs, &merge_child_errors/1)
+
+  defp merge_child_errors({k, %Changeset{}=cs}, acc), do: cs.errors ++ acc
+  defp merge_child_errors(_, acc), do: acc
 
 end
