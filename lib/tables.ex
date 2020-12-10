@@ -18,6 +18,7 @@ defmodule Pointers.Tables do
   local garbage collection.
   """  
   alias Pointers.{NotFound, Table, ULID}
+  require Logger
 
   use GenServer, restart: :transient
 
@@ -32,7 +33,6 @@ defmodule Pointers.Tables do
   def start_link(_), do: GenServer.start_link(__MODULE__, [])
 
   def data(), do: :persistent_term.get(__MODULE__)
-
 
   @spec table(query :: query) :: {:ok, Table.t} | {:error, NotFound.t}
   @doc "Get a Table identified by name, id or module."
@@ -77,24 +77,38 @@ defmodule Pointers.Tables do
 
   @doc false
   def init(_) do
-    indexed =
-      search_path()
-      |> Enum.flat_map(&app_modules/1)
-      |> Enum.filter(&pointer_schema?/1)
-      |> Enum.reduce(%{}, &index/2)
-    :persistent_term.put(__MODULE__, indexed)
+    if Code.ensure_loaded?(:telemetry),
+      do: :telemetry.span([:pointers, :tables], %{}, &init/0),
+      else: init()
     :ignore
+  end
+
+  defp init() do
+    indexed = build_index()
+    :persistent_term.put(__MODULE__, indexed)
+    {indexed, indexed}
+  end
+
+  defp build_index() do
+    search_path()
+    |> Enum.flat_map(&app_modules/1)
+    |> Enum.filter(&pointer_schema?/1)
+    |> Enum.reduce(%{}, &index/2)
   end
 
   defp app_modules(app), do: app_modules(app, Application.spec(app, :modules))
   defp app_modules(_, nil), do: []
   defp app_modules(_, mods), do: mods
+
   # called by init/1
   defp search_path(), do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
   # called by init/1
   defp pointer_schema?(module) do
-    function_exported?(module, :table_id, 0) and function_exported?(module, :__schema__, 1)
+    Code.ensure_loaded?(module) and
+    function_exported?(module, :__pointers__, 1) and
+    function_exported?(module, :__schema__, 1) and
+    module.__pointers__(:role) == :pointable
   end
 
   # called by init/1
@@ -102,14 +116,20 @@ defmodule Pointers.Tables do
   # called by index/2
   defp index(mod, acc, [:id]), do: index(mod, acc, mod.__schema__(:type, :id))
   # called by index/3, the line above
-  defp index(mod, acc, ULID), do: index(mod, acc, mod.table_id(), mod.__schema__(:source))
+  defp index(mod, acc, ULID), do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
   # doesn't look right, skip it
-  defp index(_, acc, _), do: acc
+  defp index(_, acc, _wat), do: acc
 
   # called by index/3
   defp index(mod, acc, id, table) do
-    t = %Table{ id: id, schema: mod, table: table}
+    t = %Table{id: id, schema: mod, table: table}
+    log_indexed(t)
     Map.merge(acc, %{id => t, table => t, mod => t})
+  end
+
+  defp log_indexed(table) do
+    if Code.ensure_loaded?(:telemetry),
+      do: :telemetry.execute([:pointers, :tables, :indexed], %{}, %{table: table})
   end
 
 end
