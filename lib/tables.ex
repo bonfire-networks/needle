@@ -16,7 +16,7 @@ defmodule Pointers.Tables do
   world garbage collection of all processes and the copying of the
   entire cache to each process that has queried it since its last
   local garbage collection.
-  """  
+  """
   alias Pointers.{NotFound, Table, ULID}
   require Logger
 
@@ -54,7 +54,7 @@ defmodule Pointers.Tables do
   @spec id!(query) :: integer()
   @doc "Look up a table id by id, name or schema, raise NotFound if not found."
   def id!(query) when is_atom(query) or is_binary(query), do: id!(query, data())
-    
+
   @spec ids!([binary | atom]) :: [binary]
   @doc "Look up many ids at once, raise NotFound if any of them are not found"
   def ids!(ids) do
@@ -103,7 +103,7 @@ defmodule Pointers.Tables do
   # called by init/1
   defp search_path(), do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
-  # called by init/1
+ # called by init/1
   defp pointer_schema?(module) do
     Code.ensure_loaded?(module) and
     function_exported?(module, :__pointers__, 1) and
