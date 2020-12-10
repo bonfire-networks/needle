@@ -142,7 +142,7 @@ defmodule Pointers.Migration do
         if Code.ensure_loaded?(name),
           do: name.__schema__(:source),
           else: Atom.to_string(name)
-    end    
+    end
     opts = [primary_key: false] ++ opts
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
@@ -253,8 +253,7 @@ defmodule Pointers.Migration do
     execute """
     create trigger "#{@trigger_prefix}#{table}"
     before insert on "#{table}"
-    for each row
-    execute procedure #{@trigger_function}()
+    for each row execute procedure #{@trigger_function}()
     """
   end
 
