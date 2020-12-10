@@ -2,7 +2,7 @@ defmodule Pointers.Changesets do
 
   alias Pointers.Util
   alias Ecto.Changeset
-  alias Ecto.Association.{Has, NotLoaded}
+  alias Ecto.Association.{BelongsTo, Has, NotLoaded}
 
   @doc "Returns the schema object's current state."
   def state(thing), do: thing.__meta__.state
@@ -157,17 +157,11 @@ defmodule Pointers.Changesets do
   def assoc_changeset(changeset, key, attrs, opts \\ [])
   def assoc_changeset(%Changeset{data: %schema{}=data}, key, attrs, opts) do
     case schema.__schema__(:association, key) do
-      %Has{
-        cardinality: :one,
-        owner_key: :id,
-        related: related,
-        related_key: :id,
-        relationship: :child,
-      } ->
+      %{related: related} ->
         ac(verb(data), data, key, related, attrs, opts)
-
-      other ->
-        raise ArgumentError, message: "assoc_changeset only supports `has_one` at present!"
+      _ ->
+        raise ArgumentError,
+          message: "Invalid relation: #{key} on #{schema}"
     end
   end
 
@@ -178,9 +172,11 @@ defmodule Pointers.Changesets do
     case Map.get(data, key) do
       %NotLoaded{} ->
         raise ArgumentError,
-          message: "You must preload an assoc before casting to it (or set it to nil)."
+          message: "You must preload an assoc before casting to it (or set it to nil or the empty list depending on cardinality)."
 
       %_{}=other -> ac_call(related, [other, attrs], opts)
+      # [other | _] -> acc_call(related, [other, attrs]) # TODO
+      [] -> ac_call(related, [struct(related), attrs], opts)
       nil -> ac_call(related, [struct(related), attrs], opts)
     end
   end
@@ -197,7 +193,7 @@ defmodule Pointers.Changesets do
     do: %{ cs | valid?: false, errors: cs.errors ++ mixin.errors }
 
   def cast_assoc(%Changeset{}=cs, key, attrs, opts \\ []),
-    do:  put_assoc(cs, key, assoc_changeset(cs, key, attrs, opts))
+    do: put_assoc(cs, key, assoc_changeset(cs, key, attrs, opts))
 
   defp call_extra(module, func, args, extra) when is_list(extra) do
     Code.ensure_loaded(module)
