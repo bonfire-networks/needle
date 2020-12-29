@@ -38,16 +38,16 @@ defmodule Pointers.Tables do
   @doc "Get a Table identified by name, id or module."
   def table(query) when is_binary(query) or is_atom(query) do
     case Map.get(data(), query) do
-      nil -> {:error, NotFound.new()}
+      nil -> {:error, NotFound.new(query)}
       other -> {:ok, other}
     end
   end
 
   @spec table!(query) :: Table.t
   @doc "Look up a Table by name or id, raise NotFound if not found."
-  def table!(query), do: Map.get(data(), query) || raise(NotFound)
+  def table!(query), do: Map.get(data(), query) || not_found(query)
 
-  @spec id(query) :: {:ok, integer()} | {:error, TableNotFoundError.t()}
+  @spec id(query) :: {:ok, integer()} | {:error, NotFound.t()}
   @doc "Look up a table id by id, name or schema."
   def id(query), do: with( {:ok, val} <- table(query), do: {:ok, val.id})
 
@@ -63,7 +63,7 @@ defmodule Pointers.Tables do
   end
 
   # called by id!/1, ids!/1
-  defp id!(query, data), do: Map.get(data, query).id || raise(NotFound)
+  defp id!(query, data), do: Map.get(data, query).id || not_found(query)
 
   @spec schema(query) :: {:ok, atom} | {:error, NotFound.t}
   @doc "Look up a schema module by id, name or schema"
@@ -130,6 +130,11 @@ defmodule Pointers.Tables do
   defp log_indexed(table) do
     if Code.ensure_loaded?(:telemetry),
       do: :telemetry.execute([:pointers, :tables, :indexed], %{}, %{table: table})
+  end
+
+  defp not_found(table) do
+    Logger.error("Pointers Table `#{table}` not found")
+    raise(NotFound)
   end
 
 end
