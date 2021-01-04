@@ -19,41 +19,41 @@ defmodule Pointers.Changesets do
   def is_deleted?(%_{__meta__: %{state: :deleted}}), do: true
   def is_deleted?(_), do: false
 
-  def verb(%_{}=thing), do: if(is_built?(thing), do: :create, else: :update)
+  def verb(%_{}=thing), do: if(is_built?(thing), do: :insert, else: :update)
 
-  defmacro auto(thing, attrs, options, defaults) do
+  defmacro auto(thing, params, options, defaults) do
     module = __CALLER__.module
     quote bind_quoted: [
       module: module,
       thing: thing,
-      attrs: attrs,
+      params: params,
       options: options,
       defaults: defaults,
     ] do
       Pointers.Changesets.auto(
-        thing, attrs, options, defaults,
+        thing, params, options, defaults,
         Pointers.Changesets.config_for(module, Pointers.Changesets.verb(thing))
       )
     end
   end
 
-  def auto(thing, attrs, options, defaults, config) do
+  def auto(thing, params, options, defaults, config) do
     opts = options ++ config ++ defaults
     thing
-    |> auto_cast(attrs, opts)
+    |> auto_cast(params, opts)
     |> auto_required(opts[:required])
     |> auto_fields(options, defaults, config) # individual for merge
     |> rewrite_errors(options, config)
   end
 
-  defp auto_cast(thing, attrs, opts) do
-    attrs = Util.rename(attrs, Util.add_binaries(Keyword.get(opts, :rename_attrs, [])))
-    cast(thing, attrs, opts[:cast])
+  defp auto_cast(thing, params, opts) do
+    params = Util.rename(params, Util.add_binaries(Keyword.get(opts, :rename_params, [])))
+    cast(thing, params, opts[:cast])
   end
 
   defp cast(thing, _, nil), do: Changeset.cast(thing, %{}, [])
-  defp cast(thing, attrs, cast) when is_list(cast),
-    do: Changeset.cast(thing, Map.delete(attrs, :cast), cast)
+  defp cast(thing, params, cast) when is_list(cast),
+    do: Changeset.cast(thing, Map.delete(params, :cast), cast)
 
   defp auto_required(changeset, nil), do: changeset
   defp auto_required(changeset, []), do: changeset
@@ -154,30 +154,30 @@ defmodule Pointers.Changesets do
 
   @doc """
   """
-  def assoc_changeset(changeset, key, attrs, opts \\ [])
-  def assoc_changeset(%Changeset{data: %schema{}=data}, key, attrs, opts) do
+  def assoc_changeset(changeset, key, params, opts \\ [])
+  def assoc_changeset(%Changeset{data: %schema{}=data}, key, params, opts) do
     case schema.__schema__(:association, key) do
       %{related: related} ->
-        ac(verb(data), data, key, related, attrs, opts)
+        ac(verb(data), data, key, related, params, opts)
       _ ->
         raise ArgumentError,
           message: "Invalid relation: #{key} on #{schema}"
     end
   end
 
-  defp ac(:create, %_{}, _, related, attrs, opts),
-    do: ac_call(related, [struct(related), attrs], opts)
+  defp ac(:create, %_{}, _, related, params, opts),
+    do: ac_call(related, [struct(related), params], opts)
 
-  defp ac(:update, %_{}=data, key, related, attrs, opts) do
+  defp ac(:update, %_{}=data, key, related, params, opts) do
     case Map.get(data, key) do
       %NotLoaded{} ->
         raise ArgumentError,
           message: "You must preload an assoc before casting to it (or set it to nil or the empty list depending on cardinality)."
 
-      %_{}=other -> ac_call(related, [other, attrs], opts)
-      # [other | _] -> acc_call(related, [other, attrs]) # TODO
-      [] -> ac_call(related, [struct(related), attrs], opts)
-      nil -> ac_call(related, [struct(related), attrs], opts)
+      %_{}=other -> ac_call(related, [other, params], opts)
+      # [other | _] -> acc_call(related, [other, params]) # TODO
+      [] -> ac_call(related, [struct(related), params], opts)
+      nil -> ac_call(related, [struct(related), params], opts)
     end
   end
 
@@ -192,8 +192,8 @@ defmodule Pointers.Changesets do
   def put_assoc(%Changeset{}=cs, _, %Changeset{valid?: false}=mixin),
     do: %{ cs | valid?: false, errors: cs.errors ++ mixin.errors }
 
-  def cast_assoc(%Changeset{}=cs, key, attrs, opts \\ []),
-    do: put_assoc(cs, key, assoc_changeset(cs, key, attrs, opts))
+  def cast_assoc(%Changeset{}=cs, key, params, opts \\ []),
+    do: put_assoc(cs, key, assoc_changeset(cs, key, params, opts))
 
   defp call_extra(module, func, args, extra) when is_list(extra) do
     Code.ensure_loaded(module)
@@ -219,7 +219,7 @@ defmodule Pointers.Changesets do
   end
 
   def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
-    errs = Keyword.get(options ++ config, :rename_attrs, [])
+    errs = Keyword.get(options ++ config, :rename_params, [])
     %{ cs | errors: Util.rename(errors, Util.flip(errs)) }
   end
 
