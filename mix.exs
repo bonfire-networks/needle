@@ -33,7 +33,7 @@ defmodule Pointers.MixProject do
 
   defp deps do
     [
-      {:sin, path: "../sin"},
+      # {:sin, path: "../sin"},
       {:ecto_sql, "~> 3.4"},
       {:flexto, "~> 0.1"},
       {:pointers_ulid, "~> 0.2"},
