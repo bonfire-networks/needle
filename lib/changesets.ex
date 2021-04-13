@@ -2,7 +2,7 @@ defmodule Pointers.Changesets do
 
   alias Pointers.Util
   alias Ecto.Changeset
-  alias Ecto.Association.{BelongsTo, Has, NotLoaded}
+  alias Ecto.Association.{NotLoaded}
 
   @doc "Returns the schema object's current state."
   def state(thing), do: thing.__meta__.state
@@ -85,7 +85,7 @@ defmodule Pointers.Changesets do
   defp auto_exclusion(changeset, _field, nil), do: changeset
   defp auto_exclusion(changeset, field, excl),
     do: Changeset.validate_exclusion(changeset, field, excl)
-      
+
   defp auto_format(changeset, _key, nil), do: changeset
   defp auto_format(changeset, _key, []), do: changeset
   defp auto_format(changeset, key, %Regex{}=format),
@@ -103,7 +103,7 @@ defmodule Pointers.Changesets do
   defp auto_inclusion(_changeset, key, invalid),
     do: throw {:invalid_inclusion_list, value: invalid, key: key}
 
-  
+
   defp auto_length(changeset, _key, nil), do: changeset
   defp auto_length(changeset, _key, []), do: changeset
   defp auto_length(changeset, key, opts),
@@ -240,9 +240,9 @@ defmodule Pointers.Changesets do
   defp rce_errors(_), do: []
 
   def merge_child_errors(%Changeset{}=cs),
-    do: Enum.reduce(cs.changes, cs, &merge_child_errors/1)
+    do: Enum.reduce(cs.changes, cs, &merge_child_errors/2)
 
-  defp merge_child_errors({k, %Changeset{}=cs}, acc), do: cs.errors ++ acc
+  defp merge_child_errors({_k, %Changeset{}=cs}, acc), do: cs.errors ++ acc
   defp merge_child_errors(_, acc), do: acc
 
 end
