@@ -7,9 +7,9 @@ defmodule Pointers.Table do
   use Pointers.Pointable,
     otp_app: :pointers,
     source: "pointers_table",
-    table_id: "P01NTERTAB1EF0RA11TAB1ES00",
+    table_id: "601NTERTAB1EF0RA11TAB1ES00",
     autogenerate: false
-  
+
   import Ecto.Schema
 
   @type t :: %Pointers.Table{
@@ -21,7 +21,7 @@ defmodule Pointers.Table do
   pointable_schema do
     field :table, :string
     field :schema, :any, virtual: true
-    field :pointed, :any, virtual: true 
+    field :pointed, :any, virtual: true
   end
-  
+
 end
