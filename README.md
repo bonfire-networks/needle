@@ -209,7 +209,7 @@ you gain knowledge of the table name to which you need to join.
 An example mixin schema:
 
 ```elixir
-defmodule My.Creator
+defmodule My.Creator do
   use Pointers.Mixin,
     otp_app: :my_app,
     source: "creator"
