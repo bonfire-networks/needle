@@ -18,7 +18,7 @@ defmodule Pointers.MixProject do
         },
       ],
       docs: [
-        main: "readme", # The first page to display from the docs 
+        main: "readme", # The first page to display from the docs
         extras: ["README.md"], # extra pages to include
       ],
       deps: deps(),
@@ -33,11 +33,10 @@ defmodule Pointers.MixProject do
 
   defp deps do
     [
-      # {:sin, path: "../sin"},
       {:ecto_sql, "~> 3.4"},
       {:flexto, "~> 0.1"},
       {:pointers_ulid, "~> 0.2"},
-      {:telemetry, "~> 0.4.2", optional: true},
+      {:telemetry, "~> 0.4", optional: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
     ]
   end
