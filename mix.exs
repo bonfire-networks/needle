@@ -36,7 +36,7 @@ defmodule Pointers.MixProject do
       {:ecto_sql, "~> 3.4"},
       {:flexto, "~> 0.1"},
       {:pointers_ulid, "~> 0.2"},
-      {:telemetry, "~> 0.4", optional: false, override: true},
+      {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
     ]
   end
