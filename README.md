@@ -1,6 +1,6 @@
 # Pointers
 
-[![hex.pm](https://img.shields.io/hexpm/v/pointers)](https://hex.pm/pointers)
+[![hex.pm](https://img.shields.io/hexpm/v/pointers)](https://hex.pm/packages/pointers)
 [hexdocs](https://hexdocs.pm/pointers)
 
 Ecto's missing universal foreign key

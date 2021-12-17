@@ -18,7 +18,7 @@ defmodule Pointers.Migration do
   def pointer(table, :unbreakable), do: unbreakable_pointer(table)
 
   @doc """
-  A reference to a pointer for use with 'add/3`. A strong pointer will
+  A reference to a pointer for use with `add/3`. A strong pointer will
   be deleted when the thing it's pointing to is deleted.
   """
   def strong_pointer(table \\ Pointer) do
@@ -29,7 +29,7 @@ defmodule Pointers.Migration do
   end
 
   @doc """
-  A reference to a pointer for use with 'add/3`. A weak pointer will
+  A reference to a pointer for use with `add/3`. A weak pointer will
   be set null when the thing it's pointing to is deleted.
   """
   def weak_pointer(table \\ Pointer) do
@@ -40,7 +40,7 @@ defmodule Pointers.Migration do
   end
 
   @doc """
-  A reference to a pointer for use with 'add/3`. An unbreakable
+  A reference to a pointer for use with `add/3`. An unbreakable
   pointer will prevent the thing it's pointing to from being deleted.
   """
   def unbreakable_pointer(table \\ Pointer) do
@@ -166,7 +166,7 @@ defmodule Pointers.Migration do
         if Code.ensure_loaded?(name),
           do: name.__schema__(:source),
           else: Atom.to_string(name)
-    end    
+    end
     opts = [primary_key: false] ++ opts
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
@@ -280,7 +280,7 @@ defmodule Pointers.Migration do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     repo().delete_all(from t in Table.__schema__(:source), where: t.id == ^id)
   end
-  
+
   def drop_table(name) do
     name = cond do
       is_binary(name) -> name
@@ -292,11 +292,11 @@ defmodule Pointers.Migration do
   defp eval(quoted, env) do
     Code.eval_quoted(quoted, [], env)
   end
-  
+
   defp eval_expand(quoted, env), do: expand_alias(eval(quoted, env), env)
 
   defp expand_alias({:__aliases__, _, _} = ast, env),
-    do: Macro.expand(ast, env) 
+    do: Macro.expand(ast, env)
   defp expand_alias(ast, _env),
     do: ast
 
