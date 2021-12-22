@@ -251,6 +251,23 @@ defmodule My.Creator.Migration do
 end
 ```
 
+## Virtual pointables ("virtuals")
+
+Virtuals are a new addition in pointers 0.6.0. They behave like
+pointables that you have not added any fields to.
+
+We noticed it was very common in bonfire to create pointables with no
+extra fields just so we could use the pointers system. Virtuals are
+alternative for this case that requires less typing and provides a
+reduced overhead vs pointables.
+
+Virtuals are backed by a writable view onto the `pointers` table. This
+means that when we can save the cost of maintaining a primary key in
+that table and the associated disk space.
+
+In all other respects, they behave like pointables. You can have
+changesets over them and select and insert as usual.
+
 ## Elixir-based logic
 
 The practical result of pointers is that it pushes a certain amount of
@@ -285,7 +302,7 @@ want to insert some `has_one` for mixins off your pointables.
 
 ## Tradeoffs
 
-All solutions to the universal foreign key problem have tradeofs. Here
+All solutions to the universal primary key problem have tradeofs. Here
 are what we see as the deficiencies in our approach:
 
 1. It forces a ULID on you. This is great for us, but not
@@ -294,7 +311,8 @@ are what we see as the deficiencies in our approach:
    your purposes, ULIDs are not going to be suitable for you.
 2. Ecto has no knowledge of the specialty of `Pointer`,
    e.g. `Repo.preload` does not work and you need to specify a join
-   condition to join through a pointer. Use our functions.
+   condition to join through a pointer. Use our functions or add extra
+   associations with flexto configuration.
 3. Dereferencing a list of pointers requires a select query per table
    type that occurs in the input set.
 4. Reliance on user attention. You have to follow the instructions
@@ -316,14 +334,6 @@ Alternatives include (I'm sure you can think of others):
 While we have our gripes with this approach, once you've gotten the
 hang of using it, it works out pretty well for most purposes and it's
 one of the simpler options to work with.
-
-## TODO
-
-* Docs!
-* Tests!
-* `mix pointers.gen.migration.init` task to generate an init migration.
-* `mix pointers.gen.schema.pointable` task to generate a pointable schema.
-* `mix pointers.gen.schema.mixin` task to generate a mixin schema.
 
 ## Copyright and License
 
