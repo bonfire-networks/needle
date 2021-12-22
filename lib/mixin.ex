@@ -10,7 +10,7 @@ defmodule Pointers.Mixin do
 
   @must_be_in_module "Pointers.Mixin may only be used inside a defmodule!"
 
-  def using(nil, _options), do: raise CompileError, description: @must_be_in_module
+  def using(nil, _options), do: raise RuntimeError, description: @must_be_in_module
   def using(module, options) do
     otp_app = Util.get_otp_app(options)
     Util.get_source(options)
