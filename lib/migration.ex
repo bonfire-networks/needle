@@ -122,7 +122,11 @@ defmodule Pointers.Migration do
   def create_virtual(schema) when is_atom(schema) do
     source = schema.__schema__(:source)
     id = schema.__pointers__(:table_id)
-    {:ok, id2} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
+    create_virtual(source, id)
+  end
+
+  def create_virtual(source, id) when is_binary(source) and is_binary(id) do
+    {:ok, _} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     insert_table_record(id, source)
     create_virtual_view(source, id)
     create_virtual_trigger(source, id)
@@ -156,6 +160,15 @@ defmodule Pointers.Migration do
     drop_virtual_view(name)
     delete_table_record(id)
   end
+
+  def migrate_virtual(schema), do: migrate_virtual(direction(), schema)
+  def migrate_virtual(:up, schema), do: create_virtual(schema)
+  def migrate_virtual(:down, schema), do: drop_virtual(schema)
+  def migrate_virtual(name, id) when is_binary(name) and is_binary(id),
+    do: migrate_virtual(direction(), name, id)
+
+  def migrate_virtual(:up, name, id), do: create_virtual(name, id)
+  def migrate_virtual(:down, name, id), do: drop_virtual(name, id)
 
   @doc "Creates a mixin table - one with a ULID primary key and no trigger"
   @spec create_mixin_table(name :: atom | binary, opts :: list, body :: term) :: nil
