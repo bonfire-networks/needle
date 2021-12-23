@@ -68,7 +68,7 @@ defmodule Pointers.Pointable do
   @must_use "You must use Pointers.Pointable before calling pointable_schema/1."
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
-  
+
   defp check_table_id(x) when is_binary(x), do: check_table_id_valid(x, Pointers.ULID.cast(x))
   defp check_table_id(_), do: raise ArgumentError, message: @bad_table_id
 
@@ -93,8 +93,8 @@ defmodule Pointers.Pointable do
       unquote(Util.schema_foreign_key_type(module))
       unquote(Util.put_new_attribute(module, :timestamps_opts, @default_timestamps_opts))
       schema unquote(source) do
-        Flexto.flex_schema(unquote(otp_app))
         unquote(body)
+        Flexto.flex_schema(unquote(otp_app))
       end
     end
   end
