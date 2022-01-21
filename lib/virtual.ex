@@ -12,7 +12,7 @@ defmodule Pointers.Virtual do
   ## Sample Usage
 
   ```
-  use Pointers.Pointable,
+  use Pointers.Virtual,
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of view in database
     table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid ULID to identify virtual
