@@ -342,7 +342,7 @@ defmodule Pointers.Migration do
   def create_virtual_view(source, id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     execute """
-    create or replace view "#{source}" as select id as id from "#{Pointer.__schema__(:source)}" where table_id = ('#{Ecto.UUID.cast!(id)}')
+    create or replace view "#{source}" as select id as id from "#{Pointer.__schema__(:source)}" where table_id = ('#{Ecto.UUID.cast!(id)}' :: uuid)
     """
   end
 
