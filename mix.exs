@@ -4,16 +4,16 @@ defmodule Pointers.MixProject do
   def project do
     [
       app: :pointers,
-      version: "0.5.1",
+      version: "0.6.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       description: "Ecto's missing universal foreign key",
-      homepage_url: "https://github.com/commonspub/pointers",
-      source_url: "https://github.com/commonspub/pointers",
+      homepage_url: "https://github.com/bonfire-networks/pointers",
+      source_url: "https://github.com/bonfire-networks/pointers",
       package: [
         licenses: ["Apache 2"],
         links: %{
-          "Repository" => "https://github.com/commonspub/pointers",
+          "Repository" => "https://github.com/bonfire-networks/pointers",
           "Hexdocs" => "https://hexdocs.pm/pointers",
         },
       ],
@@ -34,7 +34,7 @@ defmodule Pointers.MixProject do
   defp deps do
     [
       {:ecto_sql, "~> 3.4"},
-      {:flexto, "~> 0.1"},
+      {:flexto, "~> 0.2.3"},
       {:pointers_ulid, "~> 0.2"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
