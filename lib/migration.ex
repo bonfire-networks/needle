@@ -137,7 +137,7 @@ defmodule Pointers.Migration do
   @spec drop_pointable_table(name :: binary, id :: binary) :: nil
   def drop_pointable_table(schema) when is_atom(schema) do
     source = schema.__schema__(:source)
-    id = schema.__schema__(:table_id)
+    id = schema.__pointers__(:table_id)
     drop_pointable_table(source, id)
   end
 
