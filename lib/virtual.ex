@@ -70,6 +70,9 @@ defmodule Pointers.Virtual do
       require Flexto
       require Pointers.Changesets
       import Pointers.Virtual
+      # this is an attempt to help mix notice that we are using the configuration at compile
+      # time. In flexto, for reasons, we already had to use Application.get_env
+      _dummy_compile_env = Application.compile_env(unquote(app), unquote(module))
       unquote_splicing(pointers)
     end
   end
