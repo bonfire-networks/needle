@@ -8,7 +8,7 @@ defmodule Pointers.Pointable do
   use Pointers.Pointable,
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of table in database
-    table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid ULID to identify table
+    table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # unique ULID to identify table
 
   pointable_schema do
     # ... fields go here, if any
@@ -60,6 +60,9 @@ defmodule Pointers.Pointable do
       require Flexto
       require Pointers.Changesets
       import Pointers.Pointable
+      # this is an attempt to help mix notice that we are using the configuration at compile
+      # time. In flexto, for reasons, we already had to use Application.get_env
+      _dummy_compile_env = Application.compile_env(unquote(app), unquote(module))
       unquote_splicing(pointers)
     end
   end
