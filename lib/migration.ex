@@ -195,7 +195,7 @@ defmodule Pointers.Migration do
   @spec drop_mixin_table(name :: atom | binary) :: nil
   def drop_mixin_table(name), do: drop_table(name)
 
-  @doc "Creates a random table - one with a UUID v4 primary key."
+  @doc "Creates an unpointable random table - one with a UUID v4 or ULID primary key."
   defmacro create_random_table(name, opts \\ [], body) do
     {name, _} = eval_expand(name, __CALLER__)
     name = cond do
