@@ -1,6 +1,6 @@
 defmodule Pointers.Changesets do
 
-  alias Pointers.Util
+  alias Pointers.{ULID, Util}
   alias Ecto.Changeset
   alias Ecto.Association.{NotLoaded}
 
