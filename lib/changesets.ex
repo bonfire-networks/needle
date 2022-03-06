@@ -19,105 +19,11 @@ defmodule Pointers.Changesets do
   def is_deleted?(%_{__meta__: %{state: :deleted}}), do: true
   def is_deleted?(_), do: false
 
-  def verb(%_{}=thing), do: if(is_built?(thing), do: :insert, else: :update)
-
-  defmacro auto(thing, params, options, defaults) do
-    module = __CALLER__.module
-    quote bind_quoted: [
-      module: module,
-      thing: thing,
-      params: params,
-      options: options,
-      defaults: defaults,
-    ] do
-      Pointers.Changesets.auto(
-        thing, params, options, defaults,
-        Pointers.Changesets.config_for(module, Pointers.Changesets.verb(thing))
-      )
-    end
-  end
-
-  def auto(thing, params, options, defaults, config) do
-    opts = options ++ config ++ defaults
-    thing
-    |> auto_cast(params, opts)
-    |> auto_required(opts[:required])
-    |> auto_fields(options, defaults, config) # individual for merge
-    |> rewrite_errors(options, config)
-  end
-
-  defp auto_cast(thing, params, opts) do
-    params = Util.rename(params, Util.add_binaries(Keyword.get(opts, :rename_params, [])))
-    cast(thing, params, opts[:cast])
-  end
+  def insert_verb(%_{}=thing), do: if(is_built?(thing), do: :insert, else: :update)
 
   defp cast(thing, _, nil), do: Changeset.cast(thing, %{}, [])
   defp cast(thing, params, cast) when is_list(cast),
     do: Changeset.cast(thing, Map.delete(params, :cast), cast)
-
-  defp auto_required(changeset, nil), do: changeset
-  defp auto_required(changeset, []), do: changeset
-  defp auto_required(changeset, req) when is_list(req),
-    do: Changeset.validate_required(changeset, req)
-
-  defp auto_fields(%Changeset{data: %what{}}=cs, options, defaults, config) do
-    fields = what.__schema__(:fields) -- [:id]
-    Enum.reduce(fields, cs, fn field, cs ->
-      opts =
-        Keyword.get(options, field, []) ++ # last moment overrides
-        Keyword.get(config, field, []) ++ # configuration overrides
-        Keyword.get(defaults, field, []) # vendor values
-      cs
-      |> auto_acceptance(field, opts[:acceptance])
-      |> auto_exclusion(field,  opts[:exclusion])
-      |> auto_format(field,     opts[:format])
-      |> auto_inclusion(field,  opts[:inclusion])
-      |> auto_length(field,     opts[:length])
-      |> auto_number(field,     opts[:number])
-      |> auto_subset(field,     opts[:subset])
-    end)
-  end
-
-  defp auto_acceptance(changeset, field, true),
-    do: Changeset.validate_acceptance(changeset, field)
-  defp auto_acceptance(changeset, _field, _), do: changeset
-
-  defp auto_exclusion(changeset, _field, nil), do: changeset
-  defp auto_exclusion(changeset, field, excl),
-    do: Changeset.validate_exclusion(changeset, field, excl)
-
-  defp auto_format(changeset, _key, nil), do: changeset
-  defp auto_format(changeset, _key, []), do: changeset
-  defp auto_format(changeset, key, %Regex{}=format),
-    do: Changeset.validate_format(changeset, key, format)
-
-  defp auto_format(_changeset, key, invalid),
-      do: throw {:invalid_format_regexp, regexp: invalid, key: key}
-
-
-  defp auto_inclusion(changeset, _field, nil), do: changeset
-
-  defp auto_inclusion(changeset, field, incl) when is_list(incl),
-    do: Changeset.validate_inclusion(changeset, field, incl)
-
-  defp auto_inclusion(_changeset, key, invalid),
-    do: throw {:invalid_inclusion_list, value: invalid, key: key}
-
-
-  defp auto_length(changeset, _key, nil), do: changeset
-  defp auto_length(changeset, _key, []), do: changeset
-  defp auto_length(changeset, key, opts),
-    do: Changeset.validate_length(changeset, key, opts)
-
-  defp auto_number(changeset, _key, nil), do: changeset
-  defp auto_number(changeset, _key, []), do: changeset
-  defp auto_number(changeset, key, opts),
-    do: Changeset.validate_number(changeset, key, opts)
-
-  defp auto_subset(changeset, _key, nil), do: changeset
-  defp auto_subset(changeset, _key, []), do: changeset
-  defp auto_subset(changeset, key, opts),
-    do: Changeset.validate_subset(changeset, key, opts)
 
   def replicate_map_change(changeset, source_key, target_key, xform) do
     case Changeset.fetch_change(changeset, source_key) do
@@ -158,7 +64,7 @@ defmodule Pointers.Changesets do
   def assoc_changeset(%Changeset{data: %schema{}=data}, key, params, opts) do
     case schema.__schema__(:association, key) do
       %{related: related} ->
-        ac(verb(data), data, key, related, params, opts)
+        ac(insert_verb(data), data, key, related, params, opts)
       _ ->
         raise ArgumentError,
           message: "Invalid relation: #{key} on #{schema}"
@@ -244,5 +150,12 @@ defmodule Pointers.Changesets do
 
   defp merge_child_errors({_k, %Changeset{}=cs}, acc), do: cs.errors ++ acc
   defp merge_child_errors(_, acc), do: acc
+
+  def default_id(changeset) do
+    case Changeset.get_field(changeset, :id) do
+      nil -> Changeset.put_change(changeset, :id, ULID.generate())
+      _ -> changeset
+    end
+  end
 
 end

@@ -17,6 +17,7 @@ defmodule Pointers.Pointer do
   schema(table) do
     belongs_to :table, Table
     field :pointed, :any, virtual: true
+    field :deleted_at, :utc_datetime_usec
     Flexto.flex_schema(:pointers)
   end
 

@@ -103,8 +103,9 @@ defmodule Pointers.Tables do
   # called by init/1
   defp search_path(), do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
- # called by init/1
-  defp pointable_or_virtual_schema?(module) do
+  # called by init/1
+  @doc false
+  def pointable_or_virtual_schema?(module) do
     Code.ensure_loaded?(module) and
     function_exported?(module, :__pointers__, 1) and
     function_exported?(module, :__schema__, 1) and
