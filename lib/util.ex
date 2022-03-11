@@ -77,4 +77,9 @@ defmodule Pointers.Util do
   end
   defp schema_pk(_, _), do: :ok
 
+  def role(module) when is_atom(module) do
+    if function_exported?(module, :__pointers__, 1),
+      do: module.__pointers__(:role)
+  end
+
 end
