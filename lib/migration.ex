@@ -53,13 +53,11 @@ defmodule Pointers.Migration do
   defp table_name(name) when is_atom(name), do: Atom.to_string(name)
   defp table_name(name) when is_binary(name), do: name
 
-  @doc """
-  Adds a pointer primary key to the table.
-  Not required if you are using `create_pointable_table`
-  """
+  @doc false
   @spec add_pointer_pk() :: nil
   def add_pointer_pk(), do: add(:id, :uuid, primary_key: true)
 
+  @doc false
   @spec add_pointer_ref_pk() :: nil
   def add_pointer_ref_pk(), do: add(:id, strong_pointer(Pointer), primary_key: true)
 
@@ -87,14 +85,10 @@ defmodule Pointers.Migration do
   end
 
   defp cpt(schema, body) when is_atom(schema) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    cpt(source, id, [], body)
+    cpt(schema.__schema__(:source), schema.__pointers__(:table_id), [], body)
   end
   defp cpt(schema, opts, body) when is_atom(schema) and is_list(opts) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    cpt(source, id, opts, body)
+    cpt(schema.__schema__(:source), schema.__pointers__(:table_id), opts, body)
   end
   defp cpt(source, id, body) when is_binary(source) and is_binary(id) do
     cpt(source, id, [], body)
@@ -114,11 +108,8 @@ defmodule Pointers.Migration do
   end
 
   def create_virtual(schema) when is_atom(schema) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    create_virtual(source, id)
+    create_virtual(schema.__schema__(:source), schema.__pointers__(:table_id))
   end
-
   def create_virtual(source, id) when is_binary(source) and is_binary(id) do
     {:ok, _} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     insert_table_record(id, source)
@@ -130,9 +121,7 @@ defmodule Pointers.Migration do
   @spec drop_pointable_table(schema :: atom) :: nil
   @spec drop_pointable_table(name :: binary, id :: binary) :: nil
   def drop_pointable_table(schema) when is_atom(schema) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    drop_pointable_table(source, id)
+    drop_pointable_table(schema.__schema__(:source), schema.__pointers__(:table_id))
   end
 
   def drop_pointable_table(name, id) when is_binary(name) and is_binary(id) do
@@ -143,9 +132,7 @@ defmodule Pointers.Migration do
   end
 
   def drop_virtual(schema) when is_atom(schema) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    drop_virtual(source, id)
+    drop_virtual(schema.__schema__(:source), schema.__pointers__(:table_id))
   end
 
   def drop_virtual(name, id) when is_binary(name) and is_binary(id) do
@@ -189,7 +176,7 @@ defmodule Pointers.Migration do
   @spec drop_mixin_table(name :: atom | binary) :: nil
   def drop_mixin_table(name), do: drop_table(name)
 
-  @doc "Creates an unpointable random table - one with a UUID v4 or ULID primary key."
+  @doc "Creates a random table - one with a UUID v4 primary key."
   defmacro create_random_table(name, opts \\ [], body) do
     {name, _} = eval_expand(name, __CALLER__)
     name = cond do
@@ -226,41 +213,45 @@ defmodule Pointers.Migration do
   """
   @spec init_pointers(direction :: :up | :down) :: nil
   def init_pointers(:up) do
-    create_if_not_exists table(Table.__schema__(:source), primary_key: false) do
+    pointer = Pointer.__schema__(:source)
+    table = Table.__schema__(:source)
+    create_if_not_exists table(table, primary_key: false) do
       add_pointer_pk()
       add :table, :text
     end
-    create_if_not_exists table(Pointer.__schema__(:source), primary_key: false) do
+    create_if_not_exists table(pointer, primary_key: false) do
       add_pointer_pk()
-      ref = references Table.__schema__(:source),
-        on_delete: :delete_all, on_update: :update_all, type: :uuid
+      ref = references table, on_delete: :delete_all, on_update: :update_all, type: :uuid
       add :table_id, ref, null: false
       add :deleted_at, :timestamptz, null: true
     end
-    create_if_not_exists unique_index(Table.__schema__(:source), :table)
-    create_if_not_exists index(Pointer.__schema__(:source), :table_id)
+    create_if_not_exists unique_index(table, :table)
+    create_if_not_exists index(pointer, :table_id)
     flush()
     create_pointers_trigger_function()
     create_pointable_trigger_function()
     create_virtual_trigger_function()
     flush()
-    insert_table_record(Table.__pointers__(:table_id), Table.__schema__(:source))
+    insert_table_record(Table.__pointers__(:table_id), table)
   end
 
   def init_pointers(:down) do
+    pointer = Pointer.__schema__(:source)
+    table = Table.__schema__(:source)
     drop_pointers_trigger_function()
     drop_pointable_trigger_function()
     drop_virtual_trigger_function()
-    drop_if_exists index(Pointer.__schema__(:source), :table_id)
-    drop_if_exists index(Table.__schema__(:source), :table)
-    drop_table(Pointer.__schema__(:source))
-    drop_table(Table.__schema__(:source))
+    drop_if_exists index(pointer, :table_id)
+    drop_if_exists index(table, :table)
+    drop_table(pointer)
+    drop_table(table)
   end
 
   @doc false
   def create_pointers_trigger_function() do
+    fun = pointers_trigger_function()
     :ok = execute """
-    create or replace function #{pointers_trigger_function()}() returns trigger as $$
+    create or replace function "#{fun}"() returns trigger as $$
     declare query text;
     begin
       if (TG_OP = 'UPDATE') then
@@ -285,25 +276,28 @@ defmodule Pointers.Migration do
 
   @doc false
   def create_pointable_trigger_function() do
+    fun = pointable_trigger_function()
+    pointer = Pointer.__schema__(:source)
+    table = Table.__schema__(:source)
     :ok = execute """
-    create or replace function #{pointable_trigger_function()}() returns trigger as $$
+    create or replace function "#{fun}"() returns trigger as $$
     declare table_id uuid;
     begin
       if (TG_OP = 'INSERT') then
         if (TG_NARGS = 1) then
           select TG_ARGV[0] :: uuid into table_id;
         else
-          select id into table_id from #{Table.__schema__(:source)}
-            where #{Table.__schema__(:source)}.table = TG_TABLE_NAME;
+          select id into table_id from "#{table}"
+            where "table" = TG_TABLE_NAME;
         end if;
         if table_id is null then
           raise exception 'Table % is not pointable', TG_TABLE_NAME;
         end if;
-        insert into "#{Pointer.__schema__(:source)}" (id, table_id) values (NEW.id, table_id)
+        insert into "#{pointer}" (id, table_id) values (NEW.id, table_id)
         on conflict do nothing;
         return NEW;
       elsif (TG_OP = 'DELETE') then
-        update "#{Pointer.__schema__(:source)}" set deleted_at = now() at time zone 'utc' where id = OLD.id;
+        update "#{pointer}" set deleted_at = now() at time zone 'utc' where id = OLD.id;
         return OLD;
       else
         raise exception 'operation: %', TG_OP;
@@ -314,15 +308,17 @@ defmodule Pointers.Migration do
   end
 
   def create_virtual_trigger_function() do
+    fun = virtual_trigger_function()
+    pointer = Pointer.__schema__(:source)
     :ok = execute """
-    create or replace function "#{virtual_trigger_function()}"() returns trigger as $$
+    create or replace function "#{fun}"() returns trigger as $$
     begin
       if (TG_OP = 'INSERT') then
-        insert into #{Pointer.__schema__(:source)} (id, table_id) values (NEW.id, TG_ARGV[0] :: uuid)
+        insert into "#{pointer}" (id, table_id) values (NEW.id, TG_ARGV[0] :: uuid)
         on conflict do nothing;
         return NEW;
       elsif (TG_OP = 'DELETE') then
-        update #{Pointer.__schema__(:source)} set deleted_at = now() at time zone 'utc' where id = OLD.id;
+        update "#{pointer}" set deleted_at = now() at time zone 'utc' where id = OLD.id;
         return OLD;
       else
         raise exception 'operation: %', TG_OP;
@@ -334,42 +330,45 @@ defmodule Pointers.Migration do
 
   @doc false
   def drop_pointers_trigger_function() do
-    execute "drop function if exists #{pointers_trigger_function()}() cascade"
+    execute ~s[drop function if exists "#{pointers_trigger_function()}"() cascade]
   end
 
   @doc false
   def drop_pointable_trigger_function() do
-    execute "drop function if exists #{pointable_trigger_function()}() cascade"
+    execute ~s[drop function if exists "#{pointable_trigger_function()}"() cascade]
   end
 
   @doc false
   def drop_virtual_trigger_function() do
-    execute "drop function if exists #{virtual_trigger_function()}() cascade"
+    execute ~s[drop function if exists "#{virtual_trigger_function()}"() cascade]
   end
 
   @doc false
   def create_pointable_triggers(table_id, source) do
     {:ok, table_id} = Pointers.ULID.dump(Pointers.ULID.cast!(table_id))
+    pointer = Pointer.__schema__(:source)
     table_id = Ecto.UUID.cast!(table_id)
     drop_pointable_triggers(source) # because there is no create trigger if not exists
     # after inserting into the pointable, a shadow record should be created in the pointable table
+    # Note: `pg_trigger_depth()` is used to stop the triggers from issuing a single extra delete
+    # (that would fail) when called from the other triggers installed by this function
     execute """
     create trigger "#{source}_insert_trigger"
     before insert on "#{source}"
     for each row when (pg_trigger_depth() < 1)
-    execute procedure #{pointable_trigger_function()}('#{table_id}')
+    execute procedure "#{pointable_trigger_function()}"('#{table_id}')
     """
-    # after deleting from the pointable table, the pointer should be marked deleting
+    # after deleting from the pointable table, the pointer should be marked deleted
     execute """
     create trigger "#{source}_delete_trigger"
     after delete on "#{source}"
     for each row when (pg_trigger_depth() < 1)
-    execute procedure #{pointable_trigger_function()}()
+    execute procedure "#{pointable_trigger_function()}"()
     """
     # after marking a pointer deleted, the shadow record should be deleted
     execute """
     create trigger "#{source}_soft_delete_trigger"
-    after update on "#{Pointer.__schema__(:source)}"
+    after update on "#{pointer}"
     for each row
     when (
       pg_trigger_depth() < 1
@@ -377,40 +376,32 @@ defmodule Pointers.Migration do
       and NEW.deleted_at is not null
       and OLD.table_id = '#{table_id}' :: uuid
     )
-    execute procedure #{pointers_trigger_function()}('#{source}')
+    execute procedure "#{pointers_trigger_function()}"('#{source}')
     """
     # after deleting from pointers, the shadow record should be
     # deleted if it wasn't already marked deleted
     execute """
     create trigger "#{source}_delete_trigger"
-    after delete on "#{Pointer.__schema__(:source)}"
+    after delete on "#{pointer}"
     for each row
     when (
       pg_trigger_depth() < 1
       and OLD.deleted_at is null
       and OLD.table_id = '#{table_id}' :: uuid
     )
-    execute procedure #{pointers_trigger_function()}('#{source}')
+    execute procedure "#{pointers_trigger_function()}"('#{source}')
     """
   end
 
   @doc false
 
   def drop_pointable_triggers(table) do
-    table = table_name(table)
     pointers = Pointer.__schema__(:source)
-    execute """
-    drop trigger if exists "#{table}_insert_trigger" on "#{table}"
-    """
-    execute """
-    drop trigger if exists "#{table}_delete_trigger" on "#{table}"
-    """
-    execute """
-    drop trigger if exists "#{table}_soft_delete_trigger" on "#{pointers}"
-    """
-    execute """
-    drop trigger if exists "#{table}_delete_trigger" on "#{pointers}"
-    """
+    table = table_name(table)
+    execute ~s[drop trigger if exists "#{table}_insert_trigger" on "#{table}"]
+    execute ~s[drop trigger if exists "#{table}_delete_trigger" on "#{table}"]
+    execute ~s[drop trigger if exists "#{table}_soft_delete_trigger" on "#{pointers}"]
+    execute ~s[drop trigger if exists "#{table}_delete_trigger" on "#{pointers}"]
   end
 
   @doc false
@@ -422,60 +413,53 @@ defmodule Pointers.Migration do
     create trigger "#{table}_insert_delete_trigger"
     instead of insert or delete on "#{table}"
     for each row
-    execute procedure #{virtual_trigger_function()}('#{id}')
+    execute procedure "#{virtual_trigger_function()}"('#{id}')
    """
   end
 
   @doc false
   def drop_virtual_trigger(table) do
     table = table_name(table)
-    execute """
-    drop trigger if exists "#{table}_insert_delete_trigger" on "#{table}"
-    """
+    execute ~s[drop trigger if exists "#{table}_insert_delete_trigger" on "#{table}"]
   end
 
   @doc false
   def create_virtual_view(source, id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
     id = Ecto.UUID.cast!(id)
+    pointers = Pointer.__schema__(:source)
     execute """
     create or replace view "#{source}" as
-    select id as id, deleted_at as deleted_at
-    from "#{Pointer.__schema__(:source)}"
-    where table_id = ('#{id}' :: uuid)
+    select id as id from "#{pointers}"
+    where table_id = ('#{id}' :: uuid) and deleted_at is null
     """
   end
 
   @doc false
-  def drop_virtual_view(source) do
-    execute """
-    drop view if exists "#{source}"
-    """
-  end
+  def drop_virtual_view(source), do: execute ~s[drop view if exists "#{source}"]
 
   @doc false
   def insert_table_record(schema) do
-    source = schema.__schema__(:source)
-    id = schema.__pointers__(:table_id)
-    insert_table_record(source, id)
+    insert_table_record(schema.__schema__(:source), schema.__pointers__(:table_id))
   end
 
   #Insert a Table record. Not required when using `create_pointable_table`
   @doc false
   def insert_table_record(id, name) do
-    {:ok, table} = Pointers.ULID.dump(Table.__pointers__(:table_id))
+    {:ok, table_id} = Pointers.ULID.dump(Table.__pointers__(:table_id))
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
-    name = table_name(name)
+    table = table_name(name)
     opts = [on_conflict: :nothing]
-    repo().insert_all(Table.__schema__(:source), [%{id: id, table: name}], opts)
-    repo().insert_all(Pointer.__schema__(:source), [%{id: id, table_id: table}], opts)
+    repo().insert_all(Table.__schema__(:source),   [%{id: id, table: table}], opts)
+    repo().insert_all(Pointer.__schema__(:source), [%{id: id, table_id: table_id}], opts)
   end
 
   # Delete a Table record. Not required when using `drop_pointable_table`
   @doc false
   def delete_table_record(id) do
     {:ok, id} = Pointers.ULID.dump(Pointers.ULID.cast!(id))
-    repo().delete_all(from t in Table.__schema__(:source), where: t.id == ^id)
+    table = Table.__schema__(:source)
+    repo().delete_all(from t in table, where: t.id == ^id)
   end
 
   def drop_table(name) do
@@ -483,7 +467,7 @@ defmodule Pointers.Migration do
       is_binary(name) -> name
       is_atom(name) -> name.__schema__(:source)
     end
-    execute "drop table if exists #{name} cascade"
+    execute ~s[drop table if exists "#{name}" cascade]
   end
 
   defp eval(quoted, env), do: Code.eval_quoted(quoted, [], env)
@@ -494,12 +478,11 @@ defmodule Pointers.Migration do
   defp expand_alias(ast, _env), do: ast
 
   defp pointers_trigger_function(),  do: config(:pointers_trigger_function,  "pointers_pointers_trigger")
+
   defp pointable_trigger_function(), do: config(:pointable_trigger_function, "pointers_pointable_trigger")
+
   defp virtual_trigger_function(),   do: config(:virtual_trigger_function,   "pointers_virtual_trigger")
 
-  defp config(key, default) do
-    Application.get_env(:pointers, __MODULE__, [])
-    |> Keyword.get(key, default)
-  end
+  defp config(key, default), do: Keyword.get(Application.get_env(:pointers, __MODULE__, []), key, default)
 
 end

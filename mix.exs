@@ -6,6 +6,7 @@ defmodule Pointers.MixProject do
       app: :pointers,
       version: "0.6.0",
       elixir: "~> 1.10",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       description: "Ecto's missing universal foreign key",
       homepage_url: "https://github.com/bonfire-networks/pointers",
@@ -30,6 +31,9 @@ defmodule Pointers.MixProject do
       extra_applications: [:logger, :crypto]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["test/support" | elixirc_paths(:dev)]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
     [
