@@ -1,7 +1,29 @@
 defmodule Pointers.Pointer do
   @moduledoc """
-  A Pointer is a kind of global foreign key that can point to any of
-  the tables participating in the abstraction.
+  A Pointer is any object that can be referenced by its id.
+
+  Pointer is a simple table consisting of three fields:
+  * id - the database-unique id for this pointer in ULID format.
+  * table_id - a type tag, references `Table`.
+  * deleted_at - timestamp of when the object was deleted, null by default.
+
+  To reference `any` object, simply reference `Pointer`:
+
+  ```
+  alias Pointers.Pointer
+  belongs_to :object, Pointer
+  ```
+
+  To define a new object type there are two options, you should choose one:
+
+  * `Virtual` - an object type with a view over `Pointer` limited by type.
+  * `Pointable` - an object type with a table which is kept synchronised with `Pointer`.
+
+  For most purposes, you should use a `Virtual`. Pointable exists mostly to support existing code.
+  The major difference in practice is that you cannot add new fields to a virtual. Most of the time
+  you will want to store such extra fields in one or more mixins anyway so they may be reused.
+
+  See `Mixin` for more information about mixins.
   """
   use Ecto.Schema
   alias Ecto.Changeset
@@ -27,7 +49,7 @@ defmodule Pointers.Pointer do
     Changeset.cast(%Pointer{}, %{id: id, table_id: table_id}, [:id, :table_id])
   end
 
-  @doc "Changeset for updating which table a Pointer points to."
+  @doc false # "Changeset for updating which table a Pointer points to."
   def repoint(%Pointer{}=pointer, table) do
     table_id = Tables.id!(table)
     Changeset.cast(pointer, %{table_id: table_id}, [:table_id])
