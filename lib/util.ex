@@ -4,7 +4,40 @@ defmodule Pointers.Util do
   @bad_source "You must provide a binary :source option."
   @bad_otp_app "You must provide a valid atom :otp_app option."
 
-  # maps a tuple flip over a list
+  @doc """
+  Looks up the role for a schema participating in pointers.
+
+  If provided a schema object, uses its `:__struct__`.
+
+  If the provided an atom which is a module name of a schema participating in pointers, returns its
+  role (`:mixin`, `:pointable` or `virtual`).
+
+  Anything else returns nil.
+  """
+  def role(%module{}), do: role(module)
+  def role(module) when is_atom(module) do
+    if function_exported?(module, :__pointers__, 1),
+      do: module.__pointers__(:role)
+  end
+  def role(_), do: nil
+
+  @doc """
+  Looks up the table id for a schema participating in pointers.
+
+  If provided a schema object, uses its `:__struct__`.
+
+  If the provided an atom which is a module name of a virtual or pointable schema, a ULID.
+
+  Anything else returns nil.
+  """
+  def table_id(%module{}), do: role(module)
+  def table_id(module) when is_atom(module) do
+    if function_exported?(module, :__pointers__, 1),
+      do: module.__pointers__(:table_id)
+  end
+  def role(_), do: nil
+
+  @doc false # maps a tuple flip over a list
   def flip(list) when is_list(list),
     do: Enum.map(list, fn {k, v} -> {v, k} end)
 
@@ -64,6 +97,7 @@ defmodule Pointers.Util do
   end
 
   # defaults @primary_key
+  @doc false
   def schema_primary_key(module, opts) do
     autogen = Keyword.get(opts, :autogenerate, true)
     schema_pk(Module.get_attribute(module, :primary_key), autogen)
@@ -77,9 +111,13 @@ defmodule Pointers.Util do
   end
   defp schema_pk(_, _), do: :ok
 
-  def role(module) when is_atom(module) do
-    if function_exported?(module, :__pointers__, 1),
-      do: module.__pointers__(:role)
+  @doc "Builds an index of objects by id"
+  def index_objects_by_id(items) do
+    Enum.reduce(items, %{}, fn item, acc ->
+      case item do
+        %{id: id} -> Map.put(acc, id, item)
+        _ -> acc
+      end
+    end)
   end
-
 end

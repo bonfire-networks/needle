@@ -75,6 +75,8 @@ defmodule Pointers.Changesets do
         put_has_many(changeset, assoc_key, rels, assoc)
       %BelongsTo{} ->
         put_belongs_to(changeset, assoc_key, rels, assoc)
+      _ ->
+        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
     end
   end
 
@@ -120,17 +122,72 @@ defmodule Pointers.Changesets do
     end
   end
 
-  # def cast_assoc(%Changeset{data: %schema{}}=changeset, assoc, opts) do
-  #   if function_exported?(schema, :__pointers__, 1) do
-  #     assoc = schema.__schema__(:association, assoc)
-  #     case assoc do
-  #       %BelongsTo{} -> :ok
-  #       %Has{cardinality: :one} ->:ok
-  #       %Has{cardinality: :many} ->:ok
-  #     end
-  #   else
-  #   end
-  # end
+  @doc "Like Ecto.build_assoc/3, but can work with a Changeset"
+  def build_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, rel) do
+    assoc = owner.__schema__(:association, assoc_key)
+    case assoc do
+      %Has{cardinality: :one} ->
+        case Changeset.apply_action(changeset, :insert) do
+          {:ok, data} -> Ecto.build_assoc(data, assoc_key, rel)
+          _ -> nil
+        end
+      %Has{cardinality: :many} ->
+        case Changeset.apply_action(changeset, :insert) do
+          {:ok, data} -> Enum.map(rel, &Ecto.build_assoc(data, assoc_key, &1))
+          _ -> nil
+        end
+      %BelongsTo{} ->
+        raise RuntimeError, message: "Expected `has` association in :#{assoc_key} on %#{owner}{}"
+      _ ->
+        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
+    end
+  end
+  def build_assoc(%_{}=schema, assoc_key, rel), do: Ecto.build_assoc(schema, assoc_key, rel)
+
+  # cast_assoc but does the right thing over a put_assoc
+  def cast_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, opts) do
+    assoc = owner.__schema__(:association, assoc_key)
+    case assoc do
+      %Has{cardinality: :one} ->
+        cast_has_one(changeset, assoc_key, assoc, opts)
+      %Has{cardinality: :many} ->
+        cast_has_many(changeset, assoc_key, assoc, opts)
+      %BelongsTo{} ->
+        cast_belongs_to(changeset, assoc_key, assoc, opts)
+      _ ->
+        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
+    end
+  end
+
+  def cast_has_one(changeset, assoc_key, assoc, opts) do
+    case Changeset.get_change(changeset, assoc_key) do
+      %Changeset{} ->
+        # Update the existing changeset
+        Changeset.update_change(changeset, assoc_key, fn change ->
+          attrs = Map.get(changeset.params, to_string(assoc_key), %{})
+          with_ = get_with(changeset, opts)
+          with_.(change, attrs)
+        end)
+      nil ->
+        changeset
+        |> Changeset.cast_assoc(assoc_key)
+    end
+  end
+
+  def cast_has_many(changeset, assoc_key, _assoc, opts) do
+    Changeset.cast_assoc(changeset, assoc_key, opts)
+  end
+
+  def cast_belongs_to(changeset, assoc_key, _assoc, opts) do
+    Changeset.cast_assoc(changeset, assoc_key, opts)
+  end
+
+  defp get_with(changeset, opts) do
+    case Keyword.get(opts, :with) do
+      nil -> Function.capture(changeset.data.__struct__, :changeset, 2)
+      other -> other
+    end
+  end
 
   @doc false
   def assoc_changeset(changeset, key, params, opts \\ [])

@@ -3,6 +3,7 @@ defmodule Pointers do
   A context for working with Pointers, a sort of global foreign key scheme.
   """
 
+  import Ecto.Query
   alias Pointers.{Pointer, Tables}
 
   @doc """
@@ -34,6 +35,39 @@ defmodule Pointers do
   defp plan(%Pointer{pointed: p}, acc) when not is_nil(p), do: acc
   defp plan(%Pointer{id: id, table_id: table}, acc) do
     Map.update(acc, Tables.schema!(table), MapSet.new([id]), &MapSet.put(&1, id))
+  end
+
+  @doc """
+  Returns a basic query over undeleted pointable objects in the system,
+  optionally limited to one or more types.
+
+  If the type is set to a Pointable, Virtual or Mixin schema, records
+  will be selected from that schema directly. It is assumed this
+  filters deleted records by construction.
+
+  Otherwise, will query from Pointer, filtering not is_nil(deleted_at)
+  """
+  def query_base(type \\ nil)
+  def query_base([]), do: query_base(Pointer)
+  def query_base(nil), do: query_base(Pointer)
+  def query_base(Pointer), do: from(p in Pointer, where: is_nil(p.deleted_at))
+  def query_base(schemas) when is_list(schemas) do
+    table_ids = Enum.map(schemas, &get_table_id!/1)
+    from(p in query_base(Pointer), where: p.table_id in ^table_ids)
+  end
+  def query_base(schema) when is_atom(schema) or is_binary(schema) do
+    get_table_id!(schema) # ensure it's a pointable or virtual or table id
+    from s in schema, select: s
+  end
+
+  def get_table_id!(schema) do
+    if is_binary(schema), do: schema,
+      else: with(nil <- Pointers.Util.table_id(schema), do: need_pointable(schema))
+  end
+
+  defp need_pointable(got) do
+    raise RuntimeError,
+      message: "Expected a table id or pointable or virtual schema module name, got: #{inspect got}"
   end
 
 end
