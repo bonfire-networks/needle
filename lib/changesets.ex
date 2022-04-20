@@ -145,7 +145,7 @@ defmodule Pointers.Changesets do
   def build_assoc(%_{}=schema, assoc_key, rel), do: Ecto.build_assoc(schema, assoc_key, rel)
 
   # cast_assoc but does the right thing over a put_assoc
-  def cast_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, opts) do
+  def cast_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, opts \\ []) do
     assoc = owner.__schema__(:association, assoc_key)
     case assoc do
       %Has{cardinality: :one} ->
