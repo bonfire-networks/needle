@@ -37,7 +37,6 @@ defmodule Pointers.Pointable do
   `:role` - `:pointable`
   `:table_id` - retrieves the ULID id of the pointable table.
   `:otp_app` - retrieves the OTP application to which this belongs.
-  ```
   """
 
   alias Pointers.Util

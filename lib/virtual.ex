@@ -33,7 +33,7 @@ defmodule Pointers.Virtual do
   provide additional configuration for those in the same place. Unlike
   a regular pointable, you should not add additional
   (non-virtual) fields, but it is permitted to add `has_one` /
-  `has_many` associations. 
+  `has_many` associations.
 
   I shall say it again because it's important: This happens at
   *compile time*. You must rebuild the app containing the pointable
@@ -47,7 +47,6 @@ defmodule Pointers.Virtual do
   `:role` - `:virtual`.
   `:table_id` - retrieves the ULID id of the virtual.
   `:otp_app` - retrieves the OTP application to which this belongs.
-  ```
   """
 
   alias Pointers.Util
@@ -81,7 +80,7 @@ defmodule Pointers.Virtual do
   @must_use "You must use Pointers.Virtual before calling virtual_schema/1."
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
-  
+
   defp check_table_id(x) when is_binary(x), do: check_table_id_valid(x, Pointers.ULID.cast(x))
   defp check_table_id(_), do: raise ArgumentError, message: @bad_table_id
 
