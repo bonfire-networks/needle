@@ -118,7 +118,7 @@ defmodule Pointers.Changesets do
           Changeset.put_assoc(changeset, assoc_key, rel)
         end
       # copy it back
-      related_key -> Changeset.put_assoc(changeset, assoc_key, rel)
+      _related_key -> Changeset.put_assoc(changeset, assoc_key, rel)
     end
   end
 
@@ -159,7 +159,7 @@ defmodule Pointers.Changesets do
     end
   end
 
-  def cast_has_one(changeset, assoc_key, assoc, opts) do
+  def cast_has_one(changeset, assoc_key, _assoc, opts) do
     case Changeset.get_change(changeset, assoc_key) do
       %Changeset{} ->
         # Update the existing changeset

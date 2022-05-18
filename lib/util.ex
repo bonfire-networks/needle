@@ -35,7 +35,7 @@ defmodule Pointers.Util do
     if function_exported?(module, :__pointers__, 1),
       do: module.__pointers__(:table_id)
   end
-  def role(_), do: nil
+  def table_id(_), do: nil
 
   @doc false # maps a tuple flip over a list
   def flip(list) when is_list(list),
