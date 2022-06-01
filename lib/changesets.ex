@@ -1,4 +1,5 @@
 defmodule Pointers.Changesets do
+  require Logger
 
   alias Pointers.{ULID, Util}
   alias Ecto.Association.{BelongsTo, Has, NotLoaded}
@@ -62,11 +63,27 @@ defmodule Pointers.Changesets do
   end
 
   @doc """
-  Like `Ecto.Changeset.put_assoc` but for Pointables, Virtuals and Mixins.
+  Like `Ecto.Changeset.put_assoc/3` but for Pointables, Virtuals and Mixins.
 
   Copies across keys where possible.
   """
-  def put_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, rels) do
+  def put_assoc(changeset, assoc_key, rels) do
+    with {:error, e} <- do_maybe_put_assoc(changeset, assoc_key, rels) do
+      raise RuntimeError, message: e
+    end
+  end
+
+  @doc """
+  Like `put_assoc/3` but doesn't raise if the association doesn't exist
+  """
+  def maybe_put_assoc(changeset, assoc_key, rels) do
+    with {:error, e} <- do_maybe_put_assoc(changeset, assoc_key, rels) do
+      Logger.error(e)
+      changeset
+    end
+  end
+
+  defp do_maybe_put_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, rels) do
     assoc = owner.__schema__(:association, assoc_key)
     case assoc do
       %Has{cardinality: :one} ->
@@ -76,7 +93,7 @@ defmodule Pointers.Changesets do
       %BelongsTo{} ->
         put_belongs_to(changeset, assoc_key, rels, assoc)
       _ ->
-        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
+        {:error, "Unknown association :#{assoc_key} on %#{owner}{}"}
     end
   end
 
