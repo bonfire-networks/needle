@@ -110,9 +110,13 @@ defmodule Pointers.Changesets do
   # put_assoc for a has_many. copies the owner's key across if one is present
   defp put_has_many(changeset, assoc_key, rels, assoc) do
     case Changeset.get_field(changeset, assoc.owner_key) do
-      nil -> Changeset.put_assoc(changeset, assoc_key, rels)
+      nil ->
+        Logger.info("put_assoc/put_has_many - assoc has no related key: #{assoc_key}")
+        Changeset.put_assoc(changeset, assoc_key, rels)
       owner_key ->
+        Logger.info("put_assoc/put_has_many - assoc related key - #{assoc_key}.#{assoc.related_key}: #{inspect owner_key}")
         rels = Enum.map(rels, &Map.put(&1, assoc.related_key, owner_key))
+        Logger.info("#{assoc_key}: #{inspect rels}")
         Changeset.put_assoc(changeset, assoc_key, rels)
     end
   end
