@@ -74,7 +74,7 @@ defmodule Pointers.Mixin do
     module = __CALLER__.module
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
-  
+
   @timestamps_opts [type: :utc_datetime_usec]
   @foreign_key_type ULID
 

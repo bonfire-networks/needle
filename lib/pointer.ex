@@ -31,7 +31,7 @@ defmodule Pointers.Pointer do
   require Flexto
 
   table =
-    Application.get_env(:pointers, __MODULE__, [])
+    Application.compile_env(:pointers, __MODULE__, [])
     |> Keyword.get(:source, "pointers_pointer")
 
   @primary_key {:id, ULID, autogenerate: false}
