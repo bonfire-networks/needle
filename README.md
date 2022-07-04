@@ -295,7 +295,7 @@ config :pointers, Pointers.Table, source: "my_pointers_table"
 The `table_id` is also configurable, but we don't recommend you change it.
 
 In addition, all pointable and mixin schemas permit extension with
-[Flexto](https://github.com/commonspub/flexto). See the [Flexto
+[Flexto](https://github.com/bonfire-networks/flexto). See the [Flexto
 docs](https://hexdocs.pm/flexto/) for more information about how to
 extend schemas via configuration. You will probably at the very least
 want to insert some `has_one` for mixins off your pointables.
