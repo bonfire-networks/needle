@@ -111,12 +111,12 @@ defmodule Pointers.Changesets do
   defp put_has_many(changeset, assoc_key, rels, assoc) do
     case Changeset.get_field(changeset, assoc.owner_key) do
       nil ->
-        Logger.info("put_assoc/put_has_many - assoc has no related key: #{assoc_key}")
+        # Logger.info("put_assoc/put_has_many - assoc has no related key: #{assoc_key}")
         Changeset.put_assoc(changeset, assoc_key, rels)
       owner_key ->
-        Logger.info("put_assoc/put_has_many - assoc related key - #{assoc_key}.#{assoc.related_key}: #{inspect owner_key}")
+        # Logger.info("put_assoc/put_has_many - assoc related key - #{assoc_key}.#{assoc.related_key}: #{inspect owner_key}")
         rels = Enum.map(rels, &Map.put(&1, assoc.related_key, owner_key))
-        Logger.info("#{assoc_key}: #{inspect rels}")
+        # Logger.info("#{assoc_key}: #{inspect rels}")
         Changeset.put_assoc(changeset, assoc_key, rels)
     end
   end
@@ -360,5 +360,19 @@ defmodule Pointers.Changesets do
   # def update_change_in(%{}=data, [p | path], transform),
   #   do: Map.update(data, p, nil, &update_change_in(&1, path, transform))
   # def update_change_in(other), do: other
+
+  def put_id_on_mixins(attrs, mixin_names, %{id: pointable}) do
+    do_mixin_attrs(mixin_names, attrs, pointable)
+  end
+  def put_id_on_mixins(attrs, mixin_names, pointable) do
+    do_mixin_attrs(mixin_names, attrs, pointable)
+  end
+
+  defp do_mixin_attrs(mixin_names, attrs, id) when is_list(mixin_names) do
+    Enum.reduce(mixin_names, attrs, &do_mixin_attrs(&1, &2, id))
+  end
+  defp do_mixin_attrs(mixin_name, attrs, id) when is_atom(mixin_name) do
+    Map.update(attrs, mixin_name, nil, &Map.put(&1, :id, id))
+  end
 
 end
