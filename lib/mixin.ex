@@ -49,28 +49,33 @@ defmodule Pointers.Mixin do
 
   @must_be_in_module "Pointers.Mixin may only be used inside a defmodule!"
 
-  def using(nil, _options), do: raise RuntimeError, description: @must_be_in_module
+  def using(nil, _options),
+    do: raise(RuntimeError, description: @must_be_in_module)
+
   def using(module, options) do
     otp_app = Util.get_otp_app(options)
     Util.get_source(options)
     config = Application.get_env(otp_app, module, [])
     Module.put_attribute(module, __MODULE__, options)
     pointers = emit_pointers(config ++ options)
+
     quote do
       use Ecto.Schema
       require Pointers.Changesets
       import Flexto
       import Pointers.Mixin
+
       # this is an attempt to help mix notice that we are using the configuration at compile
       # time. In flexto, for reasons, we already had to use Application.get_env
       _dummy_compile_env = Application.compile_env(unquote(otp_app), unquote(module))
+
       unquote_splicing(pointers)
     end
   end
 
   @must_use "You must use Pointers.Mixin before calling mixin_schema/1"
 
-  defmacro mixin_schema([do: body]) do
+  defmacro mixin_schema(do: body) do
     module = __CALLER__.module
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
@@ -82,32 +87,38 @@ defmodule Pointers.Mixin do
     otp_app = Util.get_otp_app(options)
     config = Application.get_env(otp_app, module, [])
     source = Util.get_source(config ++ options)
+
     foreign_key = Module.get_attribute(module, :foreign_key_type, @foreign_key_type)
+
     timestamps_opts = Module.get_attribute(module, :timestamps_opts, @timestamps_opts)
+
     quote do
       @primary_key false
       @foreign_key_type unquote(foreign_key)
       @timestamps_opts unquote(timestamps_opts)
       schema(unquote(source)) do
-        belongs_to :pointer, Pointers.Pointer,
+        belongs_to(:pointer, Pointers.Pointer,
           foreign_key: :id,
           on_replace: :update,
           primary_key: true,
           type: Pointers.ULID
+        )
+
         unquote(body)
         Flexto.flex_schema(unquote(otp_app))
       end
     end
   end
 
-  defp schema_check_attr(_, _, _), do: raise ArgumentError, message: @must_use
+  defp schema_check_attr(_, _, _), do: raise(ArgumentError, message: @must_use)
 
   # defines __pointers__
   defp emit_pointers(config) do
     otp_app = Keyword.fetch!(config, :otp_app)
-    [ Util.pointers_clause(:role, :mixin),
+
+    [
+      Util.pointers_clause(:role, :mixin),
       Util.pointers_clause(:otp_app, otp_app)
     ]
   end
-
 end

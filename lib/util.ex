@@ -15,10 +15,12 @@ defmodule Pointers.Util do
   Anything else returns nil.
   """
   def role(%module{}), do: role(module)
+
   def role(module) when is_atom(module) do
     if function_exported?(module, :__pointers__, 1),
       do: module.__pointers__(:role)
   end
+
   def role(_), do: nil
 
   @doc """
@@ -31,13 +33,16 @@ defmodule Pointers.Util do
   Anything else returns nil.
   """
   def table_id(%module{}), do: role(module)
+
   def table_id(module) when is_atom(module) do
     if function_exported?(module, :__pointers__, 1),
       do: module.__pointers__(:table_id)
   end
+
   def table_id(_), do: nil
 
-  @doc false # maps a tuple flip over a list
+  # maps a tuple flip over a list
+  @doc false
   def flip(list) when is_list(list),
     do: Enum.map(list, fn {k, v} -> {v, k} end)
 
@@ -70,18 +75,22 @@ defmodule Pointers.Util do
   def get_source(opts), do: check_source(Keyword.get(opts, :source))
 
   defp check_source(x) when is_binary(x), do: x
-  defp check_source(_), do: raise ArgumentError, message: @bad_source
+  defp check_source(_), do: raise(ArgumentError, message: @bad_source)
 
   def get_otp_app(opts), do: check_otp_app(Keyword.get(opts, :otp_app))
 
   defp check_otp_app(x) when is_atom(x), do: x
-  defp check_otp_app(_), do: raise ArgumentError, message: @bad_otp_app
+  defp check_otp_app(_), do: raise(ArgumentError, message: @bad_otp_app)
 
   # expands to putting the attribute if it does not already exist
   def put_new_attribute(module, attribute, value) do
     if not Module.has_attribute?(module, attribute) do
       quote do
-        Module.put_attribute(unquote(module), unquote(attribute), unquote(value))
+        Module.put_attribute(
+          unquote(module),
+          unquote(attribute),
+          unquote(value)
+        )
       end
     end
   end
@@ -105,10 +114,12 @@ defmodule Pointers.Util do
 
   defp schema_pk(nil, autogenerate) do
     data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
+
     quote do
       @primary_key unquote(data)
     end
   end
+
   defp schema_pk(_, _), do: :ok
 
   @doc "Builds an index of objects by id"

@@ -34,7 +34,7 @@ defmodule Pointers.Tables do
 
   def data(), do: :persistent_term.get(__MODULE__)
 
-  @spec table(query :: query) :: {:ok, Table.t} | {:error, NotFound.t}
+  @spec table(query :: query) :: {:ok, Table.t()} | {:error, NotFound.t()}
   @doc "Get a Table identified by name, id or module."
   def table(query) when is_binary(query) or is_atom(query) do
     case Map.get(data(), query) do
@@ -43,13 +43,13 @@ defmodule Pointers.Tables do
     end
   end
 
-  @spec table!(query) :: Table.t
+  @spec table!(query) :: Table.t()
   @doc "Look up a Table by name or id, raise NotFound if not found."
   def table!(query), do: Map.get(data(), query) || not_found(query)
 
   @spec id(query) :: {:ok, integer()} | {:error, NotFound.t()}
   @doc "Look up a table id by id, name or schema."
-  def id(query), do: with( {:ok, val} <- table(query), do: {:ok, val.id})
+  def id(query), do: with({:ok, val} <- table(query), do: {:ok, val.id})
 
   @spec id!(query) :: integer()
   @doc "Look up a table id by id, name or schema, raise NotFound if not found."
@@ -65,7 +65,7 @@ defmodule Pointers.Tables do
   # called by id!/1, ids!/1
   defp id!(query, data), do: Map.get(data, query).id || not_found(query)
 
-  @spec schema(query) :: {:ok, atom} | {:error, NotFound.t}
+  @spec schema(query) :: {:ok, atom} | {:error, NotFound.t()}
   @doc "Look up a schema module by id, name or schema"
   def schema(query), do: with({:ok, val} <- table(query), do: {:ok, val.schema})
 
@@ -80,6 +80,7 @@ defmodule Pointers.Tables do
     if Code.ensure_loaded?(:telemetry),
       do: :telemetry.span([:pointers, :tables], %{}, &init/0),
       else: init()
+
     :ignore
   end
 
@@ -101,15 +102,16 @@ defmodule Pointers.Tables do
   defp app_modules(_, mods), do: mods
 
   # called by init/1
-  defp search_path(), do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
+  defp search_path(),
+    do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
   # called by init/1
   @doc false
   def pointable_or_virtual_schema?(module) do
     Code.ensure_loaded?(module) and
-    function_exported?(module, :__pointers__, 1) and
-    function_exported?(module, :__schema__, 1) and
-    module.__pointers__(:role) in [:pointable, :virtual]
+      function_exported?(module, :__pointers__, 1) and
+      function_exported?(module, :__schema__, 1) and
+      module.__pointers__(:role) in [:pointable, :virtual]
   end
 
   # called by init/1
@@ -117,7 +119,9 @@ defmodule Pointers.Tables do
   # called by index/2
   defp index(mod, acc, [:id]), do: index(mod, acc, mod.__schema__(:type, :id))
   # called by index/3, the line above
-  defp index(mod, acc, ULID), do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
+  defp index(mod, acc, ULID),
+    do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
+
   # doesn't look right, skip it
   defp index(_, acc, _wat), do: acc
 
@@ -137,5 +141,4 @@ defmodule Pointers.Tables do
     Logger.error("Pointers Table `#{table}` not found")
     raise(NotFound)
   end
-
 end

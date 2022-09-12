@@ -10,13 +10,16 @@ defmodule Pointers.Unpointable do
 
   @must_be_in_module "Pointers.Unpointable may only be used inside a defmodule!"
 
-  def using(nil, _options), do: raise CompileError, description: @must_be_in_module
+  def using(nil, _options),
+    do: raise(CompileError, description: @must_be_in_module)
+
   def using(module, options) do
     otp_app = Util.get_otp_app(options)
     Util.get_source(options)
     config = Application.get_env(otp_app, module, [])
     Module.put_attribute(module, __MODULE__, options)
     pointers = emit_pointers(config ++ options)
+
     quote do
       use Ecto.Schema
       require Pointers.Changesets
@@ -28,11 +31,11 @@ defmodule Pointers.Unpointable do
 
   @must_use "You must use Pointers.Unpointable before calling unpointable_schema/1"
 
-  defmacro unpointable_schema([do: body]) do
+  defmacro unpointable_schema(do: body) do
     module = __CALLER__.module
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
-  
+
   @timestamps_opts [type: :utc_datetime_usec]
   @foreign_key_type ULID
 
@@ -40,8 +43,11 @@ defmodule Pointers.Unpointable do
     otp_app = Util.get_otp_app(options)
     config = Application.get_env(otp_app, module, [])
     source = Util.get_source(config ++ options)
+
     foreign_key = Module.get_attribute(module, :foreign_key_type, @foreign_key_type)
+
     timestamps_opts = Module.get_attribute(module, :timestamps_opts, @timestamps_opts)
+
     quote do
       unquote(schema_primary_key(module, options))
       @foreign_key_type unquote(foreign_key)
@@ -53,7 +59,7 @@ defmodule Pointers.Unpointable do
     end
   end
 
-  defp schema_check_attr(_, _, _), do: raise ArgumentError, message: @must_use
+  defp schema_check_attr(_, _, _), do: raise(ArgumentError, message: @must_use)
 
   # defaults @primary_key
   defp schema_primary_key(module, opts) do
@@ -63,18 +69,21 @@ defmodule Pointers.Unpointable do
 
   defp schema_pk(nil, autogenerate) do
     data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
+
     quote do
       @primary_key unquote(data)
     end
   end
+
   defp schema_pk(_, _), do: :ok
 
   # defines __pointers__
   defp emit_pointers(config) do
     otp_app = Keyword.fetch!(config, :otp_app)
-    [ Util.pointers_clause(:role, :unpointable),
+
+    [
+      Util.pointers_clause(:role, :unpointable),
       Util.pointers_clause(:otp_app, otp_app)
     ]
   end
-
 end

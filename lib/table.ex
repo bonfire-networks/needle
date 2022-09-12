@@ -13,15 +13,14 @@ defmodule Pointers.Table do
   import Ecto.Schema
 
   @type t :: %Pointers.Table{
-    table: binary,
-    schema: atom | nil,
-    pointed: term | nil,
-  }
+          table: binary,
+          schema: atom | nil,
+          pointed: term | nil
+        }
 
   pointable_schema do
-    field :table, :string
-    field :schema, :any, virtual: true
-    field :pointed, :any, virtual: true
+    field(:table, :string)
+    field(:schema, :any, virtual: true)
+    field(:pointed, :any, virtual: true)
   end
-
 end

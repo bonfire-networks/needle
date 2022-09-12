@@ -37,9 +37,9 @@ defmodule Pointers.Pointer do
   @primary_key {:id, ULID, autogenerate: false}
   @foreign_key_type ULID
   schema(table) do
-    belongs_to :table, Table
-    field :pointed, :any, virtual: true
-    field :deleted_at, :utc_datetime_usec
+    belongs_to(:table, Table)
+    field(:pointed, :any, virtual: true)
+    field(:deleted_at, :utc_datetime_usec)
     Flexto.flex_schema(:pointers)
   end
 
@@ -49,10 +49,10 @@ defmodule Pointers.Pointer do
     Changeset.cast(%Pointer{}, %{id: id, table_id: table_id}, [:id, :table_id])
   end
 
-  @doc false # "Changeset for updating which table a Pointer points to."
-  def repoint(%Pointer{}=pointer, table) do
+  # "Changeset for updating which table a Pointer points to."
+  @doc false
+  def repoint(%Pointer{} = pointer, table) do
     table_id = Tables.id!(table)
     Changeset.cast(pointer, %{table_id: table_id}, [:table_id])
   end
-
 end

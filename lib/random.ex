@@ -9,13 +9,16 @@ defmodule Pointers.Random do
 
   @must_be_in_module "Pointers.Random may only be used inside a defmodule!"
 
-  def using(nil, _options), do: raise CompileError, description: @must_be_in_module
+  def using(nil, _options),
+    do: raise(CompileError, description: @must_be_in_module)
+
   def using(module, options) do
     otp_app = Util.get_otp_app(options)
     Util.get_source(options)
     config = Application.get_env(otp_app, module, [])
     Module.put_attribute(module, __MODULE__, options)
     pointers = emit_pointers(config ++ options)
+
     quote do
       use Ecto.Schema
       require Pointers.Changesets
@@ -27,11 +30,11 @@ defmodule Pointers.Random do
 
   @must_use "You must use Pointers.Random before calling random_schema/1"
 
-  defmacro random_schema([do: body]) do
+  defmacro random_schema(do: body) do
     module = __CALLER__.module
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
-  
+
   @foreign_key_type ULID
   @timestamps_opts [type: :utc_datetime_usec]
 
@@ -39,8 +42,11 @@ defmodule Pointers.Random do
     otp_app = Util.get_otp_app(options)
     config = Application.get_env(otp_app, module, [])
     source = Util.get_source(config ++ options)
+
     foreign_key = Module.get_attribute(module, :foreign_key_type, @foreign_key_type)
+
     timestamps_opts = Module.get_attribute(module, :timestamps_opts, @timestamps_opts)
+
     quote do
       @primary_key {:id, :binary_id, autogenerate: true}
       @foreign_key_type unquote(foreign_key)
@@ -52,14 +58,15 @@ defmodule Pointers.Random do
     end
   end
 
-  defp schema_check_attr(_, _, _), do: raise ArgumentError, message: @must_use
+  defp schema_check_attr(_, _, _), do: raise(ArgumentError, message: @must_use)
 
   # defines __pointers__
   defp emit_pointers(config) do
     otp_app = Keyword.fetch!(config, :otp_app)
-    [ Util.pointers_clause(:role, :random),
+
+    [
+      Util.pointers_clause(:role, :random),
       Util.pointers_clause(:otp_app, otp_app)
     ]
   end
-
 end

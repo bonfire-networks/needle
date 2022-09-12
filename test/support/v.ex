@@ -6,5 +6,4 @@ defmodule Pointers.Test.V do
 
   virtual_schema do
   end
-
 end

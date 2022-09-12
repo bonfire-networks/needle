@@ -3,15 +3,15 @@ defmodule Pointers.NotFound do
   defexception [:message, :code]
 
   @type t :: %Pointers.NotFound{
-    message: binary,
-    code: 404,
-  }
+          message: binary,
+          code: 404
+        }
 
   @doc "Creates a new NotFound"
   @spec new() :: t
-  def new(name \\ "Pointer"), do: %__MODULE__{message: "#{name} Not Found", code: 404}
+  def new(name \\ "Pointer"),
+    do: %__MODULE__{message: "#{name} Not Found", code: 404}
 
   @doc false
   def exception(_), do: new()
-
 end

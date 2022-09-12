@@ -15,14 +15,16 @@ defmodule Pointers.MixProject do
         licenses: ["Apache 2"],
         links: %{
           "Repository" => "https://github.com/bonfire-networks/pointers",
-          "Hexdocs" => "https://hexdocs.pm/pointers",
-        },
+          "Hexdocs" => "https://hexdocs.pm/pointers"
+        }
       ],
       docs: [
-        main: "readme", # The first page to display from the docs
-        extras: ["README.md"], # extra pages to include
+        # The first page to display from the docs
+        main: "readme",
+        # extra pages to include
+        extras: ["README.md"]
       ],
-      deps: deps(),
+      deps: deps()
     ]
   end
 
@@ -41,8 +43,7 @@ defmodule Pointers.MixProject do
       {:flexto, "~> 0.2.3"},
       {:pointers_ulid, "~> 0.2"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
-
 end

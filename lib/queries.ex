@@ -45,7 +45,7 @@
 
 #   # defp expand_alias({:__aliases__, _, _}=a), do: Code.eval_quoted(a)
 #   # defp expand_alias(other), do: other
-    
+
 #   # defmacro mix_in(query, source, mixins, opts \\ []),
 #   #   do: join_mixins(query, source, :inner, mixins, opts)
 

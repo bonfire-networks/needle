@@ -24,11 +24,15 @@ defmodule Pointers.Changesets do
   def valid?(%Changeset{valid?: v}), do: v
   def valid?(cs) when is_list(cs), do: Enum.all?(cs, &valid?/1)
 
-  def insert_verb(%_{}=thing), do: if(built?(thing), do: :insert, else: :update)
+  def insert_verb(%_{} = thing),
+    do: if(built?(thing), do: :insert, else: :update)
 
-  @doc false # here be dragons
-  def set_state(%_{__meta__: meta}=orig, to), do: Map.put(orig, :__meta__, set_state(meta, to))
-  def set_state(%Metadata{state: _}=orig, to), do: Map.put(orig, :state, to)
+  # here be dragons
+  @doc false
+  def set_state(%_{__meta__: meta} = orig, to),
+    do: Map.put(orig, :__meta__, set_state(meta, to))
+
+  def set_state(%Metadata{state: _} = orig, to), do: Map.put(orig, :state, to)
 
   @doc """
   Like `Ecto.Changeset.cast` but for Pointables, Virtuals and Mixins.
@@ -38,19 +42,24 @@ defmodule Pointers.Changesets do
   def cast(changeset, params, cols) do
     case changeset do
       # for :loaded things, we just cast them as their ids already exist
-      %{__meta__: %{state: :loaded}}                   -> Changeset.cast(changeset, params, cols)
-      %Changeset{data: %{__meta__: %{state: :loaded}}} -> Changeset.cast(changeset, params, cols)
+      %{__meta__: %{state: :loaded}} ->
+        Changeset.cast(changeset, params, cols)
+
+      %Changeset{data: %{__meta__: %{state: :loaded}}} ->
+        Changeset.cast(changeset, params, cols)
+
       # for :built things, we should autogenerate an id if one is not
       # present and it is a pointable or virtual type
       %Changeset{data: %schema{__meta__: %{state: :built}}} ->
-        if Util.role(schema) not in [:pointable, :virtual]
-        or is_binary(Changeset.get_field(changeset, :id)) do
+        if Util.role(schema) not in [:pointable, :virtual] or
+             is_binary(Changeset.get_field(changeset, :id)) do
           Changeset.cast(changeset, params, cols)
         else
           changeset
           |> Changeset.cast(params, cols)
           |> Changeset.put_change(:id, ULID.generate())
         end
+
       %schema{__meta__: %{state: :built}} ->
         if Util.role(schema) in [:pointable, :virtual] do
           changeset
@@ -83,15 +92,23 @@ defmodule Pointers.Changesets do
     end
   end
 
-  defp do_maybe_put_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, rels) do
+  defp do_maybe_put_assoc(
+         %Changeset{data: %owner{}} = changeset,
+         assoc_key,
+         rels
+       ) do
     assoc = owner.__schema__(:association, assoc_key)
+
     case assoc do
       %Has{cardinality: :one} ->
         put_has_one(changeset, assoc_key, rels, assoc)
+
       %Has{cardinality: :many} ->
         put_has_many(changeset, assoc_key, rels, assoc)
+
       %BelongsTo{} ->
         put_belongs_to(changeset, assoc_key, rels, assoc)
+
       _ ->
         {:error, "Unknown association :#{assoc_key} on %#{owner}{}"}
     end
@@ -100,7 +117,9 @@ defmodule Pointers.Changesets do
   # put_assoc for a has_one. copies the owner's key across if one is present
   defp put_has_one(changeset, assoc_key, rel, assoc) do
     case Changeset.get_field(changeset, assoc.owner_key) do
-      nil -> Changeset.put_assoc(changeset, assoc_key, rel)
+      nil ->
+        Changeset.put_assoc(changeset, assoc_key, rel)
+
       owner_key ->
         rel = Map.put(rel, assoc.related_key, owner_key)
         Changeset.put_assoc(changeset, assoc_key, rel)
@@ -113,6 +132,7 @@ defmodule Pointers.Changesets do
       nil ->
         # Logger.info("put_assoc/put_has_many - assoc has no related key: #{assoc_key}")
         Changeset.put_assoc(changeset, assoc_key, rels)
+
       owner_key ->
         # Logger.info("put_assoc/put_has_many - assoc related key - #{assoc_key}.#{assoc.related_key}: #{inspect owner_key}")
         rels = Enum.map(rels, &Map.put(&1, assoc.related_key, owner_key))
@@ -131,52 +151,71 @@ defmodule Pointers.Changesets do
         if Util.role(assoc.related) && assoc.related_key == :id do
           # Autogenerate the id for them and copy it back
           rel = Map.put(rel, assoc.related_key, ULID.generate())
+
           changeset
           |> Changeset.put_assoc(assoc_key, rel)
-          |> Changeset.put_change(assoc.owner_key, Map.get(rel, assoc.related_key))
+          |> Changeset.put_change(
+            assoc.owner_key,
+            Map.get(rel, assoc.related_key)
+          )
         else
           # Not much we can do but leave it to ecto
           Changeset.put_assoc(changeset, assoc_key, rel)
         end
+
       # copy it back
-      _related_key -> Changeset.put_assoc(changeset, assoc_key, rel)
+      _related_key ->
+        Changeset.put_assoc(changeset, assoc_key, rel)
     end
   end
 
   @doc "Like Ecto.build_assoc/3, but can work with a Changeset"
-  def build_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, rel) do
+  def build_assoc(%Changeset{data: %owner{}} = changeset, assoc_key, rel) do
     assoc = owner.__schema__(:association, assoc_key)
+
     case assoc do
       %Has{cardinality: :one} ->
         case Changeset.apply_action(changeset, :insert) do
           {:ok, data} -> Ecto.build_assoc(data, assoc_key, rel)
           _ -> nil
         end
+
       %Has{cardinality: :many} ->
         case Changeset.apply_action(changeset, :insert) do
           {:ok, data} -> Enum.map(rel, &Ecto.build_assoc(data, assoc_key, &1))
           _ -> nil
         end
+
       %BelongsTo{} ->
-        raise RuntimeError, message: "Expected `has` association in :#{assoc_key} on %#{owner}{}"
+        raise RuntimeError,
+          message: "Expected `has` association in :#{assoc_key} on %#{owner}{}"
+
       _ ->
-        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
+        raise RuntimeError,
+          message: "Unknown association :#{assoc_key} on %#{owner}{}"
     end
   end
-  def build_assoc(%_{}=schema, assoc_key, rel), do: Ecto.build_assoc(schema, assoc_key, rel)
+
+  def build_assoc(%_{} = schema, assoc_key, rel),
+    do: Ecto.build_assoc(schema, assoc_key, rel)
 
   # cast_assoc but does the right thing over a put_assoc
-  def cast_assoc(%Changeset{data: %owner{}}=changeset, assoc_key, opts \\ []) do
+  def cast_assoc(%Changeset{data: %owner{}} = changeset, assoc_key, opts \\ []) do
     assoc = owner.__schema__(:association, assoc_key)
+
     case assoc do
       %Has{cardinality: :one} ->
         cast_has_one(changeset, assoc_key, assoc, opts)
+
       %Has{cardinality: :many} ->
         cast_has_many(changeset, assoc_key, assoc, opts)
+
       %BelongsTo{} ->
         cast_belongs_to(changeset, assoc_key, assoc, opts)
+
       _ ->
-        raise RuntimeError, message: "Unknown association :#{assoc_key} on %#{owner}{}"
+        raise RuntimeError,
+          message: "Unknown association :#{assoc_key} on %#{owner}{}"
     end
   end
 
@@ -189,6 +228,7 @@ defmodule Pointers.Changesets do
           with_ = get_with(changeset, opts)
           with_.(change, attrs)
         end)
+
       nil ->
         changeset
         |> Changeset.cast_assoc(assoc_key)
@@ -212,10 +252,12 @@ defmodule Pointers.Changesets do
 
   @doc false
   def assoc_changeset(changeset, key, params, opts \\ [])
-  def assoc_changeset(%Changeset{data: %schema{}=data}, key, params, opts) do
+
+  def assoc_changeset(%Changeset{data: %schema{} = data}, key, params, opts) do
     case schema.__schema__(:association, key) do
       %{related: related} ->
         ac(insert_verb(data), data, key, related, params, opts)
+
       _ ->
         raise ArgumentError,
           message: "Invalid relation: #{key} on #{schema}"
@@ -225,21 +267,29 @@ defmodule Pointers.Changesets do
   defp ac(:create, %_{}, _, related, params, opts),
     do: ac_call(related, [struct(related), params], opts)
 
-  defp ac(:update, %_{}=data, key, related, params, opts) do
+  defp ac(:update, %_{} = data, key, related, params, opts) do
     case Map.get(data, key) do
       %NotLoaded{} ->
         raise ArgumentError,
-          message: "You must preload an assoc before casting to it (or set it to nil or the empty list depending on cardinality)."
+          message:
+            "You must preload an assoc before casting to it (or set it to nil or the empty list depending on cardinality)."
 
-      %_{}=other -> ac_call(related, [other, params], opts)
+      %_{} = other ->
+        ac_call(related, [other, params], opts)
+
       # [other | _] -> acc_call(related, [other, params]) # TODO
-      [] -> ac_call(related, [struct(related), params], opts)
-      nil -> ac_call(related, [struct(related), params], opts)
+      [] ->
+        ac_call(related, [struct(related), params], opts)
+
+      nil ->
+        ac_call(related, [struct(related), params], opts)
     end
   end
 
   defp ac_call(schema, args, []), do: call(schema, :changeset, args)
-  defp ac_call(schema, args, opts), do: call_extra(schema, :changeset, args, [opts])
+
+  defp ac_call(schema, args, opts),
+    do: call_extra(schema, :changeset, args, [opts])
 
   # @doc "Like `Ecto.Changeset.put_assoc` but copies keys properly"
   # def put_assoc(%Changeset{data: %struct{}}=changeset, key, value_or_values) do
@@ -252,19 +302,20 @@ defmodule Pointers.Changesets do
   # def put_assoc(%Changeset{}=cs, _, %Changeset{valid?: false}=mixin),
   #   do: %{ cs | valid?: false, errors: cs.errors ++ mixin.errors }
 
-
-
   # def cast_assoc(%Changeset{}=cs, key, params, opts \\ []),
   #   do: put_assoc(cs, key, assoc_changeset(cs, key, params, opts))
 
   defp call_extra(module, func, args, extra) when is_list(extra) do
     Code.ensure_loaded(module)
     size = Enum.count(args)
+
     function_exported?(module, func, size + Enum.count(extra))
     |> ce(module, func, args, extra, size)
   end
 
-  defp ce(true, module, func, args, extra, _), do: apply(module, func, args ++ extra)
+  defp ce(true, module, func, args, extra, _),
+    do: apply(module, func, args ++ extra)
+
   defp ce(false, module, func, args, _, size),
     do: c2(function_exported?(module, func, size), module, func, args)
 
@@ -275,39 +326,42 @@ defmodule Pointers.Changesets do
   end
 
   defp c2(true, module, func, args), do: apply(module, func, args)
+
   defp c2(false, module, func, args) do
     raise ArgumentError,
       message: "Function not found: #{module}.#{func}, args: #{inspect(args)}"
   end
 
   @doc false
-  def rewrite_errors(%Changeset{errors: errors}=cs, options, config) do
+  def rewrite_errors(%Changeset{errors: errors} = cs, options, config) do
     errs = Keyword.get(options ++ config, :rename_params, [])
-    %{ cs | errors: Util.rename(errors, Util.flip(errs)) }
+    %{cs | errors: Util.rename(errors, Util.flip(errs))}
   end
 
   @doc false
-  def rewrite_child_errors(%Changeset{data: %what{}}=cs) do
+  def rewrite_child_errors(%Changeset{data: %what{}} = cs) do
     rewrite_errors(cs, [], config_for(what))
   end
 
   @doc false
-  def rewrite_constraint_errors(%Changeset{}=c) do
+  def rewrite_constraint_errors(%Changeset{} = c) do
     changes = Enum.reduce(c.changes, c.changes, &rce_changes/2)
     errors = c.errors ++ Enum.flat_map(changes, &rce_errors/1)
-    {:error, %{ c | changes: changes, errors: errors }}
+    {:error, %{c | changes: changes, errors: errors}}
   end
 
-  defp rce_changes({k, %Changeset{valid?: false}=v}, acc), do: Map.put(acc, k, rewrite_child_errors(v))
+  defp rce_changes({k, %Changeset{valid?: false} = v}, acc),
+    do: Map.put(acc, k, rewrite_child_errors(v))
+
   defp rce_changes(_, acc), do: acc
 
   defp rce_errors({_, %Changeset{valid?: false, errors: e}}), do: e
   defp rce_errors(_), do: []
 
-  def merge_child_errors(%Changeset{}=cs),
+  def merge_child_errors(%Changeset{} = cs),
     do: Enum.reduce(cs.changes, cs, &merge_child_errors/2)
 
-  defp merge_child_errors({_k, %Changeset{}=cs}, acc), do: cs.errors ++ acc
+  defp merge_child_errors({_k, %Changeset{} = cs}, acc), do: cs.errors ++ acc
   defp merge_child_errors(_, acc), do: acc
 
   @doc false
@@ -323,18 +377,28 @@ defmodule Pointers.Changesets do
     case Changeset.fetch_change(changeset, source_key) do
       {:ok, change} ->
         Changeset.put_change(changeset, target_key, xform.(change))
-      _ -> changeset
+
+      _ ->
+        changeset
     end
   end
 
   @doc false
-  def replicate_map_valid_change(%Changeset{valid?: true}=changeset, source_key, target_key, xform) do
+  def replicate_map_valid_change(
+        %Changeset{valid?: true} = changeset,
+        source_key,
+        target_key,
+        xform
+      ) do
     case Changeset.fetch_change(changeset, source_key) do
       {:ok, change} ->
         Changeset.put_change(changeset, target_key, xform.(change))
-      _ -> changeset
+
+      _ ->
+        changeset
     end
   end
+
   def replicate_map_valid_change(changeset, _, _, _), do: changeset
 
   @doc false
@@ -350,7 +414,7 @@ defmodule Pointers.Changesets do
     if is_list(conf) and is_list(val), do: val ++ conf, else: val
   end
 
-  def update_data(%Changeset{data: data}=changeset, fun),
+  def update_data(%Changeset{data: data} = changeset, fun),
     do: Map.put(changeset, :data, fun.(data))
 
   # def update_change_in(data, path, transform)
@@ -364,6 +428,7 @@ defmodule Pointers.Changesets do
   def put_id_on_mixins(attrs, mixin_names, %{id: pointable}) do
     do_mixin_attrs(mixin_names, attrs, pointable)
   end
+
   def put_id_on_mixins(attrs, mixin_names, pointable) do
     do_mixin_attrs(mixin_names, attrs, pointable)
   end
@@ -371,8 +436,8 @@ defmodule Pointers.Changesets do
   defp do_mixin_attrs(mixin_names, attrs, id) when is_list(mixin_names) do
     Enum.reduce(mixin_names, attrs, &do_mixin_attrs(&1, &2, id))
   end
+
   defp do_mixin_attrs(mixin_name, attrs, id) when is_atom(mixin_name) do
     Map.update(attrs, mixin_name, nil, &Map.put(&1, :id, id))
   end
-
 end

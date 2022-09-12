@@ -55,7 +55,9 @@ defmodule Pointers.Virtual do
 
   @must_be_in_module "Pointers.Virtual may only be used inside a defmodule!"
 
-  defp using(nil, _options), do: raise RuntimeError, description: @must_be_in_module
+  defp using(nil, _options),
+    do: raise(RuntimeError, description: @must_be_in_module)
+
   defp using(module, options) do
     # raise early if not present
     get_table_id(options)
@@ -64,14 +66,17 @@ defmodule Pointers.Virtual do
     Module.put_attribute(module, __MODULE__, options)
     config = Application.get_env(app, module, [])
     pointers = emit_pointers(config ++ options)
+
     quote do
       use Ecto.Schema
       require Flexto
       require Pointers.Changesets
       import Pointers.Virtual
+
       # this is an attempt to help mix notice that we are using the configuration at compile
       # time. In flexto, for reasons, we already had to use Application.get_env
       _dummy_compile_env = Application.compile_env(unquote(app), unquote(module))
+
       unquote_splicing(pointers)
     end
   end
@@ -81,14 +86,19 @@ defmodule Pointers.Virtual do
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
 
-  defp check_table_id(x) when is_binary(x), do: check_table_id_valid(x, Pointers.ULID.cast(x))
-  defp check_table_id(_), do: raise ArgumentError, message: @bad_table_id
+  defp check_table_id(x) when is_binary(x),
+    do: check_table_id_valid(x, Pointers.ULID.cast(x))
+
+  defp check_table_id(_), do: raise(ArgumentError, message: @bad_table_id)
 
   defp check_table_id_valid(x, {:ok, x}), do: x
-  defp check_table_id_valid(_, _), do: raise ArgumentError, message: @bad_table_id
+
+  defp check_table_id_valid(_, _),
+    do: raise(ArgumentError, message: @bad_table_id)
 
   defmacro virtual_schema(body)
-  defmacro virtual_schema([do: body]) do
+
+  defmacro virtual_schema(do: body) do
     module = __CALLER__.module
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
@@ -98,9 +108,11 @@ defmodule Pointers.Virtual do
     otp_app = Keyword.fetch!(options, :otp_app)
     config = Application.get_env(otp_app, module, [])
     source = Util.get_source(config ++ options)
+
     quote do
       unquote(Util.schema_primary_key(module, options))
       unquote(Util.schema_foreign_key_type(module))
+
       schema unquote(source) do
         Flexto.flex_schema(unquote(otp_app))
         unquote(body)
@@ -108,16 +120,17 @@ defmodule Pointers.Virtual do
     end
   end
 
-  defp schema_check_attr(_, _, _), do: raise RuntimeError, message: @must_use
+  defp schema_check_attr(_, _, _), do: raise(RuntimeError, message: @must_use)
 
   # defines __pointers__
   defp emit_pointers(config) do
     table_id = get_table_id(config)
     otp_app = Util.get_otp_app(config)
-    [ Util.pointers_clause(:role, :virtual),
+
+    [
+      Util.pointers_clause(:role, :virtual),
       Util.pointers_clause(:table_id, table_id),
-      Util.pointers_clause(:otp_app, otp_app),
+      Util.pointers_clause(:otp_app, otp_app)
     ]
   end
-
 end
