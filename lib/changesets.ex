@@ -76,7 +76,7 @@ defmodule Pointers.Changesets do
 
   Copies across keys where possible.
   """
-  def put_assoc(changeset, assoc_key, rels) do
+  def put_assoc!(changeset, assoc_key, rels) do
     with {:error, e} <- do_maybe_put_assoc(changeset, assoc_key, rels) do
       raise RuntimeError, message: e
     end
@@ -85,7 +85,7 @@ defmodule Pointers.Changesets do
   @doc """
   Like `put_assoc/3` but doesn't raise if the association doesn't exist
   """
-  def maybe_put_assoc(changeset, assoc_key, rels) do
+  def put_assoc(changeset, assoc_key, rels) do
     with {:error, e} <- do_maybe_put_assoc(changeset, assoc_key, rels) do
       Logger.error(e)
       changeset
@@ -112,6 +112,15 @@ defmodule Pointers.Changesets do
       _ ->
         {:error, "Unknown association :#{assoc_key} on %#{owner}{}"}
     end
+  end
+
+  defp do_maybe_put_assoc(object,
+         assoc_key,
+         rels) when is_struct(object) do
+    Ecto.Changeset.cast(object, %{}, [])
+    |> do_maybe_put_assoc(
+         assoc_key,
+         rels)
   end
 
   # put_assoc for a has_one. copies the owner's key across if one is present
