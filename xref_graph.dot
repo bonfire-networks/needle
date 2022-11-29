@@ -1,0 +1,37 @@
+digraph "xref graph" {
+  "lib/changesets.ex"
+  "lib/changesets.ex" -> "lib/util.ex"
+  "lib/class.ex"
+  "lib/class.ex" -> "lib/changesets.ex" [label="(export)"]
+  "lib/class.ex" -> "lib/pointable.ex" [label="(compile)"]
+  "lib/pointable.ex" -> "lib/util.ex"
+  "lib/form.ex"
+  "lib/form.ex" -> "lib/util.ex"
+  "lib/migration.ex"
+  "lib/migration.ex" -> "lib/pointer.ex"
+  "lib/pointer.ex" -> "lib/table.ex"
+  "lib/table.ex" -> "lib/changesets.ex" [label="(export)"]
+  "lib/table.ex" -> "lib/pointable.ex" [label="(compile)"]
+  "lib/pointer.ex" -> "lib/tables.ex"
+  "lib/tables.ex" -> "lib/not_found.ex"
+  "lib/tables.ex" -> "lib/table.ex" [label="(export)"]
+  "lib/migration.ex" -> "lib/table.ex"
+  "lib/mixin.ex"
+  "lib/mixin.ex" -> "lib/util.ex"
+  "lib/not_found.ex"
+  "lib/pointable.ex"
+  "lib/pointer.ex"
+  "lib/pointers.ex"
+  "lib/pointers.ex" -> "lib/pointer.ex" [label="(export)"]
+  "lib/pointers.ex" -> "lib/tables.ex"
+  "lib/pointers.ex" -> "lib/util.ex"
+  "lib/random.ex"
+  "lib/random.ex" -> "lib/util.ex"
+  "lib/table.ex"
+  "lib/tables.ex"
+  "lib/unpointable.ex"
+  "lib/unpointable.ex" -> "lib/util.ex"
+  "lib/util.ex"
+  "lib/virtual.ex"
+  "lib/virtual.ex" -> "lib/util.ex"
+}

@@ -1,7 +1,20 @@
+Code.eval_file("mess.exs", (if File.exists?("../../lib/mix/mess.exs"), do: "../../lib/mix/"))
+
 defmodule Pointers.MixProject do
   use Mix.Project
 
   def project do
+    if File.exists?("../../.is_umbrella.exs") do
+      [
+        build_path: "../../_build",
+        config_path: "../../config/config.exs",
+        deps_path: "../../deps",
+        lockfile: "../../mix.lock"
+      ]
+    else
+      []
+    end
+    ++
     [
       app: :pointers,
       version: "0.6.0",
@@ -38,7 +51,7 @@ defmodule Pointers.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
-    [
+    Mess.deps [
       {:ecto_sql, "~> 3.8"},
       {:flexto, "~> 0.2.3"},
       {:pointers_ulid, "~> 0.2"},
