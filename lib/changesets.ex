@@ -98,22 +98,24 @@ defmodule Pointers.Changesets do
          rels
        ) do
     do_maybe_put_assoc(
-         schema,
-         changeset,
-         assoc_key,
-         rels
-       )
+      schema,
+      changeset,
+      assoc_key,
+      rels
+    )
   end
 
-  defp maybe_put_assoc(%{__struct__: schema} = object,
-         assoc_key,
-         rels) do
-    do_maybe_put_assoc(
-         schema,
-         object,
+  defp maybe_put_assoc(
+         %{__struct__: schema} = object,
          assoc_key,
          rels
-       )
+       ) do
+    do_maybe_put_assoc(
+      schema,
+      object,
+      assoc_key,
+      rels
+    )
   end
 
   defp do_maybe_put_assoc(
