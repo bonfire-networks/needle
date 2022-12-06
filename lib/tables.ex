@@ -87,6 +87,7 @@ defmodule Pointers.Tables do
   defp init() do
     indexed = build_index()
     :persistent_term.put(__MODULE__, indexed)
+    Logger.info("An index of Pointers.Tables has been built")
     {indexed, indexed}
   end
 
