@@ -54,7 +54,7 @@ defmodule Pointers.MixProject do
     Mess.deps [
       {:ecto_sql, "~> 3.8"},
       {:flexto, "~> 0.2.3"},
-      {:pointers_ulid, "~> 0.2"},
+      {:pointers_ulid, git: "https://github.com/bonfire-networks/pointers_ulid", branch: "main"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
