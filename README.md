@@ -38,7 +38,8 @@ migration to set up the database before you can start writing your
 regular migrations:
 
 ```elixir
-defmodule MyApp.Repo.Migrations.InitPointers do
+defmodule MyApp.Repo.Migrations.InitPointers  do
+  @moduledoc false
   use Ecto.Migration
   import Pointers.Migration
 
@@ -94,7 +95,8 @@ pass `autogenerate: false` to the options provided when using
 Now let's define the migration for our schema:
 
 ```elixir
-defmodule MyApp.Repo.Migrations.Greeting do
+defmodule MyApp.Repo.Migrations.Greeting  do
+  @moduledoc false
   use Ecto.Migration
   import Pointers.Migration
 
@@ -161,7 +163,8 @@ In this case we will use a strong pointer, because we want it to be
 deleted if the pointed object is deleted.
 
 ```elixir
-defmodule MyApp.Repo.Migrations.Hello do
+defmodule MyApp.Repo.Migrations.Hello  do
+  @moduledoc false
   use Ecto.Migration
   import Pointers.Migration
 
@@ -209,7 +212,7 @@ you gain knowledge of the table name to which you need to join.
 An example mixin schema:
 
 ```elixir
-defmodule My.Creator do
+defmodule My.Creator  do
   use Pointers.Mixin,
     otp_app: :my_app,
     source: "creator"
