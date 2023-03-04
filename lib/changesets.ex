@@ -90,6 +90,12 @@ defmodule Pointers.Changesets do
       Logger.error(e)
       changeset
     end
+
+    # rescue
+    #   e in ArgumentError -> 
+    #     IO.warn("Pointers.Changeset: Could not put_assoc #{inspect assoc_key}")
+    #     Logger.error(e)
+    #     changeset
   end
 
   defp maybe_put_assoc(
