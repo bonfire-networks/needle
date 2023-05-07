@@ -91,9 +91,18 @@ defmodule Pointers.Tables do
     {indexed, indexed}
   end
 
-  defp build_index() do
+  defp search_modules() do
     search_path()
     |> Enum.flat_map(&app_modules/1)
+  end
+
+  def schema_modules() do
+    search_modules()
+    |> Enum.filter(&schema?/1)
+  end
+
+  defp build_index() do
+    search_modules()
     |> Enum.filter(&pointable_or_virtual_schema?/1)
     |> Enum.reduce(%{}, &index/2)
   end
@@ -106,12 +115,16 @@ defmodule Pointers.Tables do
   defp search_path(),
     do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
 
+  def schema?(module) do
+    Code.ensure_loaded?(module) and
+      function_exported?(module, :__schema__, 1)
+  end
+
   # called by init/1
   @doc false
   def pointable_or_virtual_schema?(module) do
-    Code.ensure_loaded?(module) and
+    schema?(module) and
       function_exported?(module, :__pointers__, 1) and
-      function_exported?(module, :__schema__, 1) and
       module.__pointers__(:role) in [:pointable, :virtual]
   end
 
