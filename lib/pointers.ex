@@ -57,7 +57,7 @@ defmodule Pointers do
   def query_base(type \\ nil)
   def query_base([]), do: query_base(Pointer)
   def query_base(nil), do: query_base(Pointer)
-  def query_base(Pointer), do: from(p in Pointer, where: is_nil(p.deleted_at))
+  def query_base(Pointer), do: from(p in Pointer, as: :main_object, where: is_nil(p.deleted_at))
 
   def query_base(schemas) when is_list(schemas) do
     table_ids = Enum.map(schemas, &get_table_id!/1)
