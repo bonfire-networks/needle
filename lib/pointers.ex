@@ -45,7 +45,7 @@ defmodule Pointers do
   end
 
   @doc """
-  Returns a basic query over undeleted pointable objects in the system,
+  Returns a basic query over non-deleted pointable objects in the system,
   optionally limited to one or more types.
 
   If the type is set to a Pointable, Virtual or Mixin schema, records
@@ -57,6 +57,7 @@ defmodule Pointers do
   def query_base(type \\ nil)
   def query_base([]), do: query_base(Pointer)
   def query_base(nil), do: query_base(Pointer)
+  def query_base(:include_deleted), do: from(p in Pointer, as: :main_object)
   def query_base(Pointer), do: from(p in Pointer, as: :main_object, where: is_nil(p.deleted_at))
 
   def query_base(schemas) when is_list(schemas) do

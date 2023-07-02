@@ -199,12 +199,18 @@ defmodule Pointers.Migration do
     opts = [primary_key: false] ++ opts
 
     quote do
-      table = Ecto.Migration.table(unquote(name), unquote(opts))
+      name = unquote(name)
+      table = Ecto.Migration.table(name, unquote(opts))
 
       Ecto.Migration.create_if_not_exists table do
         Pointers.Migration.add_pointer_ref_pk()
+
         unquote(body)
       end
+
+      # execute """
+      # ALTER TABLE #{name} add constraint pointer_is_not_deleted check (is_not_deleted(id))
+      # """
     end
   end
 
@@ -281,11 +287,25 @@ defmodule Pointers.Migration do
     create_if_not_exists(unique_index(table, :table))
     create_if_not_exists(index(pointer, :table_id))
     flush()
+    add_is_not_deleted(pointer)
     create_pointers_trigger_function()
     create_pointable_trigger_function()
     create_virtual_trigger_function()
     flush()
     insert_table_record(Table.__pointers__(:table_id), table)
+  end
+
+  def add_is_not_deleted(table) do
+    execute("""
+     create or replace function is_not_deleted(uuid) returns boolean as $$
+    select exists (
+        select 1
+        from #{table}
+        where id   = $1
+          and deleted_at IS NULL
+    );
+    $$ language sql;
+    """)
   end
 
   def init_pointers(:down) do
