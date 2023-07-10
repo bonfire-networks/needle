@@ -101,9 +101,14 @@ defmodule Pointers.Tables do
     |> Enum.filter(&schema?/1)
   end
 
+  def mixin_modules() do
+    search_modules()
+    |> Enum.filter(&in_roles?(&1, [:mixin]))
+  end
+
   defp build_index() do
     search_modules()
-    |> Enum.filter(&pointable_or_virtual_schema?/1)
+    |> Enum.filter(&in_roles?(&1, [:pointable, :virtual]))
     |> Enum.reduce(%{}, &index/2)
   end
 
@@ -121,11 +126,10 @@ defmodule Pointers.Tables do
   end
 
   # called by init/1
-  @doc false
-  def pointable_or_virtual_schema?(module) do
+  defp in_roles?(module, roles) do
     schema?(module) and
       function_exported?(module, :__pointers__, 1) and
-      module.__pointers__(:role) in [:pointable, :virtual]
+      module.__pointers__(:role) in roles
   end
 
   # called by init/1
