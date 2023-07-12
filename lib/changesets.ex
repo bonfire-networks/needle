@@ -52,7 +52,7 @@ defmodule Pointers.Changesets do
       # present and it is a pointable or virtual type
       %Changeset{data: %schema{__meta__: %{state: :built}}} ->
         if Util.role(schema) not in [:pointable, :virtual] or
-             is_binary(Changeset.get_field(changeset, :id)) do
+             is_binary(get_field(changeset, :id)) do
           Changeset.cast(changeset, params, cols)
         else
           changeset
@@ -149,7 +149,7 @@ defmodule Pointers.Changesets do
 
   # put_assoc for a has_one. copies the owner's key across if one is present
   defp put_has_one(changeset, assoc_key, rel, assoc) do
-    case Changeset.get_field(changeset, assoc.owner_key) do
+    case get_field(changeset, assoc.owner_key) do
       nil ->
         Changeset.put_assoc(changeset, assoc_key, rel)
 
@@ -161,7 +161,7 @@ defmodule Pointers.Changesets do
 
   # put_assoc for a has_many. copies the owner's key across if one is present
   defp put_has_many(changeset, assoc_key, rels, assoc) do
-    case Changeset.get_field(changeset, assoc.owner_key) do
+    case get_field(changeset, assoc.owner_key) do
       nil ->
         # Logger.info("put_assoc/put_has_many - assoc has no related key: #{assoc_key}")
         Changeset.put_assoc(changeset, assoc_key, rels)
@@ -399,7 +399,7 @@ defmodule Pointers.Changesets do
 
   @doc false
   def default_id(changeset) do
-    case Changeset.get_field(changeset, :id) do
+    case get_field(changeset, :id) do
       id when is_binary(id) -> changeset
       _ -> Changeset.put_change(changeset, :id, ULID.generate())
     end
@@ -473,4 +473,8 @@ defmodule Pointers.Changesets do
   defp do_mixin_attrs(mixin_name, attrs, id) when is_atom(mixin_name) do
     Map.update(attrs, mixin_name, nil, &Map.put(&1, :id, id))
   end
+
+  def get_field(%Changeset{} = cs, key), do: Changeset.get_field(cs, key)
+  def get_field(%{} = map, key), do: Map.get(map, key)
+  def get_field(other, key), do: other[key]
 end
