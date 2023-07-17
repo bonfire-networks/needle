@@ -196,7 +196,7 @@ defmodule Pointers.Migration do
             else: Atom.to_string(name)
       end
 
-    opts = [primary_key: false] ++ opts
+    opts = [primary_key: false] ++ List.wrap(opts)
 
     quote do
       name = unquote(name)
@@ -233,7 +233,7 @@ defmodule Pointers.Migration do
             else: Atom.to_string(name)
       end
 
-    opts = [primary_key: false] ++ opts
+    opts = [primary_key: false] ++ List.wrap(opts)
 
     quote do
       table = Ecto.Migration.table(unquote(name), unquote(opts))
