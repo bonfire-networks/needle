@@ -83,7 +83,7 @@ defmodule Pointers.Changesets do
   end
 
   @doc """
-  Like `put_assoc/3` but doesn't raise if the association doesn't exist
+  Like `put_assoc!/3` but doesn't raise if the association doesn't exist
   """
   def put_assoc(changeset, assoc_key, rels) do
     with {:error, e} <- maybe_put_assoc(changeset, assoc_key, rels) do
