@@ -118,7 +118,7 @@ defmodule Pointers.Changesets do
        ) do
     do_maybe_put_assoc(
       schema,
-      object,
+      Changeset.cast(object, %{}, []),
       assoc_key,
       rels
     )
