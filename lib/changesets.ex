@@ -57,17 +57,26 @@ defmodule Pointers.Changesets do
         else
           changeset
           |> Changeset.cast(params, cols)
-          |> Changeset.put_change(:id, ULID.generate())
+          |> put_new_id()
         end
 
       %schema{__meta__: %{state: :built}} ->
         if Util.role(schema) in [:pointable, :virtual] do
           changeset
           |> Changeset.cast(params, cols)
-          |> Changeset.put_change(:id, ULID.generate())
+          |> put_new_id()
         else
           Changeset.cast(changeset, params, cols)
         end
+    end
+  end
+
+  def put_new_id(changeset) do
+    if is_binary(get_field(changeset, :id)) do
+      changeset
+    else
+      changeset
+      |> Changeset.put_change(:id, ULID.generate())
     end
   end
 
