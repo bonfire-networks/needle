@@ -86,7 +86,9 @@ defmodule Pointers.Changesets do
   Copies across keys where possible.
   """
   def put_assoc!(changeset, assoc_key, rels) do
-    with {:error, e} <- maybe_put_assoc(changeset, assoc_key, rels) do
+    {schema, changeset} = schema_and_changeset(changeset)
+
+    with {:error, e} <- maybe_put_assoc(schema, changeset, assoc_key, rels) do
       raise RuntimeError, message: e
     end
   end
@@ -95,7 +97,9 @@ defmodule Pointers.Changesets do
   Like `put_assoc!/3` but doesn't raise if the association doesn't exist
   """
   def put_assoc(changeset, assoc_key, rels) do
-    with {:error, e} <- maybe_put_assoc(changeset, assoc_key, rels) do
+    {schema, changeset} = schema_and_changeset(changeset)
+
+    with {:error, e} <- maybe_put_assoc(schema, changeset, assoc_key, rels) do
       Logger.error(e)
       changeset
     end
@@ -107,33 +111,19 @@ defmodule Pointers.Changesets do
     #     changeset
   end
 
-  defp maybe_put_assoc(
-         %Changeset{data: %schema{}} = changeset,
-         assoc_key,
-         rels
-       ) do
-    do_maybe_put_assoc(
-      schema,
-      changeset,
-      assoc_key,
-      rels
-    )
+  defp schema_and_changeset(%Changeset{data: %schema{}} = changeset) do
+    {schema, changeset}
+  end
+
+  defp schema_and_changeset(%{__struct__: schema} = object) do
+    {schema, Changeset.change(object)}
+  end
+
+  defp schema_and_changeset(schema) when is_atom(schema) do
+    {schema, Changeset.change(schema)}
   end
 
   defp maybe_put_assoc(
-         %{__struct__: schema} = object,
-         assoc_key,
-         rels
-       ) do
-    do_maybe_put_assoc(
-      schema,
-      Changeset.cast(object, %{}, []),
-      assoc_key,
-      rels
-    )
-  end
-
-  defp do_maybe_put_assoc(
          schema,
          changeset_or_object,
          assoc_key,
@@ -151,8 +141,14 @@ defmodule Pointers.Changesets do
       %BelongsTo{} ->
         put_belongs_to(changeset_or_object, assoc_key, rels, assoc)
 
+      %Ecto.Association.ManyToMany{} ->
+        #  TODO: special handling like the ones above?
+        Changeset.put_assoc(changeset_or_object, assoc_key, rels)
+
       _ ->
-        {:error, "Cannot put unknown association :#{assoc_key} on %#{schema}{}"}
+        meta = "#{assoc_key} on %#{schema}{}"
+        Logger.error("Unrecognised assoc #{meta}: #{inspect(assoc)}")
+        {:error, "Cannot put unknown association: #{meta}"}
     end
   end
 
@@ -254,6 +250,10 @@ defmodule Pointers.Changesets do
 
       %BelongsTo{} ->
         cast_belongs_to(changeset, assoc_key, assoc, opts)
+
+      %Ecto.Association.ManyToMany{} ->
+        #  TODO: special handling like the ones above?
+        Changeset.cast_assoc(changeset, assoc_key, opts)
 
       _ ->
         raise RuntimeError,
