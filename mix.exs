@@ -55,7 +55,7 @@ defmodule Needle.MixProject do
       {:ecto_sql, "~> 3.8"},
       {:exto, "~> 0.3"},
       {:needle_ulid, "~> 0.3"},
-      {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
+      {:telemetry, "~> 0.4 or ~> 1.0", optional: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
