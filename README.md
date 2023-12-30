@@ -1,7 +1,7 @@
-# Pointers
+# Needle
 
-[![hex.pm](https://img.shields.io/hexpm/v/pointers)](https://hex.pm/packages/pointers)
-[hexdocs](https://hexdocs.pm/pointers)
+[![hex.pm](https://img.shields.io/hexpm/v/needle)](https://hex.pm/packages/needle)
+[hexdocs](https://hexdocs.pm/needle)
 
 Ecto's missing universal foreign key
 
@@ -26,7 +26,7 @@ A `Pointer` is a pointer id and a table id.
 With these two ingredients, we can construct a means of pointing to
 any table that has a `Table` entry.
 
-`Pointer` and `Table` IDs are both `Pointers.ULID`, a UUID-like type
+`Pointer` and `Table` IDs are both `Needle.ULID`, a UUID-like type
 that combines a millisecond-precision timestamp and some randomness to
 reduce the likelihood of a clash. It naturally sorts both in binary
 and text form by time and as far as postgres is concerned, it's a UUID.
@@ -41,7 +41,7 @@ regular migrations:
 defmodule MyApp.Repo.Migrations.InitPointers  do
   @moduledoc false
   use Ecto.Migration
-  import Pointers.Migration
+  import Needle.Migration
 
   def up(), do: inits(:up)
   def down(), do: inits(:down)
@@ -60,7 +60,7 @@ them. These must be 26 characters long and in the alphabet of
 [Crockford's Base32](https://en.wikipedia.org/wiki/Base32#Crockford's_Base32).
 They should be easy to identify in a printout and might be silly.
 
-There is a helper function, `synthesise!/1` in `Pointers.ULID` to
+There is a helper function, `synthesise!/1` in `Needle.ULID` to
 assist with this process - give it a 26-character long binary of ascii
 alphanumerics and it will give you the closest ULID that matches back.
 
@@ -68,7 +68,7 @@ Let's look at a simple schema:
 
 ```elixir
 defmodule MyApp.Greeting do
-  use Pointers.Pointable,
+  use Needle.Pointable,
     otp_app: :my_app,
     source: "myapp_greeting",
     table_id: "GREET1NGSFR0MD0CEXAMP1E000"
@@ -79,7 +79,7 @@ defmodule MyApp.Greeting do
 end
 ```
 
-To declare a pointable schema, we start by using `Pointers.Pointable`,
+To declare a pointable schema, we start by using `Needle.Pointable`,
 providing the name of our otp application, the source table's name in
 the database and our chosen sentinel ULID.
 
@@ -90,7 +90,7 @@ let it handle the primary key.
 
 If for some reason you wished to turn autogeneration off, you could
 pass `autogenerate: false` to the options provided when using
-`Pointers.Pointable`.
+`Needle.Pointable`.
 
 Now let's define the migration for our schema:
 
@@ -98,7 +98,7 @@ Now let's define the migration for our schema:
 defmodule MyApp.Repo.Migrations.Greeting  do
   @moduledoc false
   use Ecto.Migration
-  import Pointers.Migration
+  import Needle.Migration
 
   def up() do
     create_pointable_table(:greeting, "GREET1NGSFR0MD0CEXAMP1E000") do
@@ -118,18 +118,18 @@ except you use `create_pointable_table` and
 appearance again here. It's *very* important that these match what we
 declared in the schema.
 
-## Referencing Pointers
+## Referencing Needle
 
 Ecto does not know anything about our scheme, so unless we
 specifically want something to reference one of the pointed tables, we
-typically `belongs_to` with `Pointers.Pointer`. The table in which we
+typically `belongs_to` with `Needle.Pointer`. The table in which we
 do this does not itself need to be pointable.
 
 ```elixir
 defmodule MyApp.Foo do
 
   use Ecto.Schema
-  alias Pointers.Pointer
+  alias Needle.Pointer
 
   # regular ecto table, not pointable!
   schema "hello" do
@@ -144,7 +144,7 @@ that the referenced record exists in that table in the normal
 way. There may be some performance benefit, we didn't benchmark it.
 
 The migration is slightly more complex, we have to decide what type of
-a pointer it is. Pointers come in three categories:
+a pointer it is. Needle come in three categories:
 
 * A strong pointer is not nullable and is deleted when the object it
   points to is deleted.
@@ -166,7 +166,7 @@ deleted if the pointed object is deleted.
 defmodule MyApp.Repo.Migrations.Hello  do
   @moduledoc false
   use Ecto.Migration
-  import Pointers.Migration
+  import Needle.Migration
 
   def change() do
     create_if_not_exists table(:hello) do
@@ -179,25 +179,25 @@ end
 
 If you are pointing to a specific table instead of pointer,
 `strong_pointer/1` allows you to pass the name of that module
-(`strong_pointer/0` calls this with `Pointers.Pointer`).
+(`strong_pointer/0` calls this with `Needle.Pointer`).
 
-## Dereferencing Pointers
+## Dereferencing Needle
 
 It is common that even though you have a universal foreign key, you
 will want to issue different queries based upon the type that is being
 pointed to. For this reason, it is up to you to decide how to perform
 an onward query.
 
-`Pointers.schema/1` turns a `Pointer` into an Ecto schema module name
-you can switch against. `Pointers.plan` breaks down a list of Pointers
+`Needle.Pointers.schema/1` turns a `Pointer` into an Ecto schema module name
+you can switch against. `Needle.Pointers.plan` breaks down a list of Needle
 into a map of ids keyed by schema module. It is handy to define some
 functions in your (non-library) application that can load any type of
 pointer in given contexts.
 
-## Querying Pointers
+## Querying Needle
 
 Since `Pointer` has a table, you can use its `table_id` field to
-filter by pointed type. `Pointers.Tables.id!/1` (or `ids!/1` for a
+filter by pointed type. `Needle.Tables.id!/1` (or `ids!/1` for a
 list) can be used to obtain the IDs for a table or tables.
 
 Then you run into another problem, that even though you know all of
@@ -213,7 +213,7 @@ An example mixin schema:
 
 ```elixir
 defmodule My.Creator  do
-  use Pointers.Mixin,
+  use Needle.Mixin,
     otp_app: :my_app,
     source: "creator"
 
@@ -232,7 +232,7 @@ The migration for this is slightly more complicated:
 defmodule My.Creator.Migration do
 
   import Ecto.Migration
-  import Pointers.Migration
+  import Needle.Migration
 
   defp creator_table(), do: My.Creator.__schema__(:source)
   defp user_table(), do: My.User.__schema__(:source)
@@ -256,15 +256,15 @@ end
 
 ## Virtual pointables ("virtuals")
 
-Virtuals are a new addition in pointers 0.6.0. They behave like
+Virtuals are a new addition in needle 0.6.0. They behave like
 pointables that you have not added any fields to.
 
 We noticed it was very common in bonfire to create pointables with no
-extra fields just so we could use the pointers system. Virtuals are
+extra fields just so we could use the needle system. Virtuals are
 alternative for this case that requires less typing and provides a
 reduced overhead vs pointables.
 
-Virtuals are backed by a writable view onto the `pointers` table. This
+Virtuals are backed by a writable view onto the `needle` table. This
 means that when we can save the cost of maintaining a primary key in
 that table and the associated disk space.
 
@@ -273,7 +273,7 @@ changesets over them and select and insert as usual.
 
 ## Elixir-based logic
 
-The practical result of pointers is that it pushes a certain amount of
+The practical result of needle is that it pushes a certain amount of
 validation and consistency logic back into elixir land. It is
 therefore your elixir code's responsibility to ensure that data is
 inserted into the appropriate mixin tables when inserting a pointable
@@ -288,18 +288,18 @@ mixin. You quite possibly wanted to left join.
 
 Every pointable or mixin schema is overrideable with configuration
 during compilation (this is why using them requires an `:otp_app` to
-be specified). For example, we could override `Pointers.Table` (which
+be specified). For example, we could override `Needle.Table` (which
 is a pointable table) thus:
 
 ```elixir
-config :pointers, Pointers.Table, source: "my_pointers_table"
+config :needle, Needle.Table, source: "my_pointers_table"
 ```
 
 The `table_id` is also configurable, but we don't recommend you change it.
 
 In addition, all pointable and mixin schemas permit extension with
-[Flexto](https://github.com/bonfire-networks/flexto). See the [Flexto
-docs](https://hexdocs.pm/flexto/) for more information about how to
+[Exto](https://github.com/bonfire-networks/exto). See the [Exto
+docs](https://hexdocs.pm/exto/) for more information about how to
 extend schemas via configuration. You will probably at the very least
 want to insert some `has_one` for mixins off your pointables.
 
@@ -315,8 +315,8 @@ are what we see as the deficiencies in our approach:
 2. Ecto has no knowledge of the specialty of `Pointer`,
    e.g. `Repo.preload` does not work and you need to specify a join
    condition to join through a pointer. Use our functions or add extra
-   associations with flexto configuration.
-3. Dereferencing a list of pointers requires a select query per table
+   associations with exto configuration.
+3. Dereferencing a list of needle requires a select query per table
    type that occurs in the input set.
 4. Reliance on user attention. You have to follow the instructions
    correctly to make the system work at all.
@@ -340,7 +340,7 @@ one of the simpler options to work with.
 
 ## Copyright and License
 
-Copyright (c) 2020 pointers Contributors
+Copyright (c) 2020 needle Contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

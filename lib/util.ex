@@ -1,4 +1,4 @@
-defmodule Pointers.Util do
+defmodule Needle.Util do
   @moduledoc false
 
   @bad_source "You must provide a binary :source option."
@@ -97,7 +97,7 @@ defmodule Pointers.Util do
 
   # defaults the foreign key type to ULID
   def schema_foreign_key_type(module),
-    do: put_new_attribute(module, :foreign_key_type, Pointers.ULID)
+    do: put_new_attribute(module, :foreign_key_type, Needle.ULID)
 
   def pointers_clause(arg, value) do
     quote do
@@ -113,7 +113,7 @@ defmodule Pointers.Util do
   end
 
   defp schema_pk(nil, autogenerate) do
-    data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
+    data = Macro.escape({:id, Needle.ULID, autogenerate: autogenerate})
 
     quote do
       @primary_key unquote(data)

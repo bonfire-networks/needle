@@ -1,11 +1,11 @@
-defmodule Pointers.Pointable do
+defmodule Needle.Pointable do
   @moduledoc """
   Sets up an Ecto Schema for a Pointable table.
 
   ## Sample Usage
 
   ```
-  use Pointers.Pointable,
+  use Needle.Pointable,
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of table in database
     table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # unique ULID to identify table
@@ -22,7 +22,7 @@ defmodule Pointers.Pointable do
   current module. Any values provided here will override the defaults
   provided to `use`. This allows you to configure them after the fact.
 
-  Additionally, pointables use `Flexto`'s `flex_schema()`, so you can
+  Additionally, pointables use `Exto`'s `flex_schema()`, so you can
   provide additional configuration for those in the same place.
 
   I shall say it again because it's important: This happens at
@@ -39,11 +39,11 @@ defmodule Pointers.Pointable do
   `:otp_app` - retrieves the OTP application to which this belongs.
   """
 
-  alias Pointers.Util
+  alias Needle.Util
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Pointable may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Pointable may only be used inside a defmodule!"
 
   defp using(nil, _options),
     do: raise(RuntimeError, description: @must_be_in_module)
@@ -59,12 +59,12 @@ defmodule Pointers.Pointable do
 
     quote do
       use Ecto.Schema
-      require Flexto
-      require Pointers.Changesets
-      import Pointers.Pointable
+      require Exto
+      require Needle.Changesets
+      import Needle.Pointable
 
       # this is an attempt to help mix notice that we are using the configuration at compile
-      # time. In flexto, for reasons, we already had to use Application.get_env
+      # time. In exto, for reasons, we already had to use Application.get_env
       _dummy_compile_env = Application.compile_env(unquote(app), unquote(module))
 
       unquote_splicing(pointers)
@@ -72,12 +72,12 @@ defmodule Pointers.Pointable do
   end
 
   @bad_table_id "You must provide a ULID-formatted binary :table_id option."
-  @must_use "You must use Pointers.Pointable before calling pointable_schema/1."
+  @must_use "You must use Needle.Pointable before calling pointable_schema/1."
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
 
   defp check_table_id(x) when is_binary(x),
-    do: check_table_id_valid(x, Pointers.ULID.cast(x))
+    do: check_table_id_valid(x, Needle.ULID.cast(x))
 
   defp check_table_id(_), do: raise(ArgumentError, message: @bad_table_id)
 
@@ -115,7 +115,7 @@ defmodule Pointers.Pointable do
 
       schema unquote(source) do
         unquote(body)
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end
@@ -124,7 +124,7 @@ defmodule Pointers.Pointable do
 
   # defines __pointers__
   defp emit_pointers(config) do
-    table_id = Pointers.ULID.cast!(Keyword.fetch!(config, :table_id))
+    table_id = Needle.ULID.cast!(Keyword.fetch!(config, :table_id))
     otp_app = Keyword.fetch!(config, :otp_app)
 
     [

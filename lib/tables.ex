@@ -1,4 +1,4 @@
-defmodule Pointers.Tables do
+defmodule Needle.Tables do
   @moduledoc """
   A Global cache of Tables to be queried by their (Pointer) IDs, table
   names or Ecto Schema module names.
@@ -6,7 +6,7 @@ defmodule Pointers.Tables do
   Use of the Table Service requires:
 
   1. You have run the migrations shipped with this library.
-  2. You have started `Pointers.Tables` before querying.
+  2. You have started `Needle.Tables` before querying.
   3. All OTP applications with pointable Ecto Schemata to be added to the schema path.
   4. OTP 21.2 or greater, though we recommend using the most recent release available.
 
@@ -17,7 +17,7 @@ defmodule Pointers.Tables do
   entire cache to each process that has queried it since its last
   local garbage collection.
   """
-  alias Pointers.{NotFound, Table, ULID}
+  alias Needle.{NotFound, Table, ULID}
   require Logger
 
   use GenServer, restart: :transient
@@ -78,7 +78,7 @@ defmodule Pointers.Tables do
   @doc false
   def init(_) do
     if Code.ensure_loaded?(:telemetry),
-      do: :telemetry.span([:pointers, :tables], %{}, &init/0),
+      do: :telemetry.span([:needle, :tables], %{}, &init/0),
       else: init()
 
     :ignore
@@ -87,7 +87,7 @@ defmodule Pointers.Tables do
   defp init() do
     indexed = build_index()
     :persistent_term.put(__MODULE__, indexed)
-    Logger.info("An index of Pointers.Tables has been built")
+    Logger.info("An index of Needle.Tables has been built")
     {indexed, indexed}
   end
 
@@ -118,7 +118,7 @@ defmodule Pointers.Tables do
 
   # called by init/1
   defp search_path(),
-    do: [:pointers | Application.fetch_env!(:pointers, :search_path)]
+    do: [:needle | Application.fetch_env!(:needle, :search_path)]
 
   def schema?(module) do
     Code.ensure_loaded?(module) and
@@ -152,11 +152,11 @@ defmodule Pointers.Tables do
 
   defp log_indexed(table) do
     if Code.ensure_loaded?(:telemetry),
-      do: :telemetry.execute([:pointers, :tables, :indexed], %{}, %{table: table})
+      do: :telemetry.execute([:needle, :tables, :indexed], %{}, %{table: table})
   end
 
   defp not_found(table) do
-    Logger.error("Pointers Table `#{table}` not found")
+    Logger.error("Needle Table `#{table}` not found")
     raise(NotFound)
   end
 end

@@ -1,14 +1,14 @@
-defmodule Pointers.Form do
+defmodule Needle.Form do
   @moduledoc """
 
   """
 
   # alias Ecto.Changeset
-  alias Pointers.{ULID, Util}
+  alias Needle.{ULID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Form may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Form may only be used inside a defmodule!"
 
   def using(nil, _options),
     do: raise(CompileError, description: @must_be_in_module)
@@ -21,14 +21,14 @@ defmodule Pointers.Form do
 
     quote do
       use Ecto.Schema
-      require Pointers.Changesets
-      import Flexto
-      import Pointers.Form
+      require Needle.Changesets
+      import Exto
+      import Needle.Form
       unquote_splicing(pointers)
     end
   end
 
-  @must_use "You must use Pointers.Form before calling form_schema/1"
+  @must_use "You must use Needle.Form before calling form_schema/1"
 
   defmacro form_schema(do: body) do
     module = __CALLER__.module
@@ -47,7 +47,7 @@ defmodule Pointers.Form do
       @foreign_key_type unquote(foreign_key)
       embedded_schema do
         unquote(body)
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end

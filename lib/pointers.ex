@@ -1,10 +1,10 @@
-defmodule Pointers do
+defmodule Needle.Pointers do
   @moduledoc """
-  A context for working with Pointers, a sort of global foreign key scheme.
+  A context for working with Needle, a sort of global foreign key scheme.
   """
 
   import Ecto.Query
-  alias Pointers.{Pointer, Tables}
+  alias Needle.{Pointer, Tables}
 
   @doc """
   Returns a Pointer, either the one provided or a synthesised one
@@ -74,7 +74,7 @@ defmodule Pointers do
   def get_table_id!(schema) do
     if is_binary(schema),
       do: schema,
-      else: with(nil <- Pointers.Util.table_id(schema), do: need_pointable(schema))
+      else: with(nil <- Needle.Util.table_id(schema), do: need_pointable(schema))
   end
 
   defp need_pointable(got) do

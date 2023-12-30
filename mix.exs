@@ -1,6 +1,6 @@
 Code.eval_file("mess.exs", (if File.exists?("../../lib/mix/mess.exs"), do: "../../lib/mix/"))
 
-defmodule Pointers.MixProject do
+defmodule Needle.MixProject do
   use Mix.Project
 
   def project do
@@ -16,19 +16,19 @@ defmodule Pointers.MixProject do
     end
     ++
     [
-      app: :pointers,
-      version: "0.6.0",
+      app: :needle,
+      version: "0.7.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      description: "Ecto's missing universal foreign key",
-      homepage_url: "https://github.com/bonfire-networks/pointers",
-      source_url: "https://github.com/bonfire-networks/pointers",
+      description: "Universal foreign keys, virtual schemas, and shared data mixins",
+      homepage_url: "https://github.com/bonfire-networks/needle",
+      source_url: "https://github.com/bonfire-networks/needle",
       package: [
         licenses: ["Apache 2"],
         links: %{
-          "Repository" => "https://github.com/bonfire-networks/pointers",
-          "Hexdocs" => "https://hexdocs.pm/pointers"
+          "Repository" => "https://github.com/bonfire-networks/needle",
+          "Hexdocs" => "https://hexdocs.pm/needle"
         }
       ],
       docs: [
@@ -53,8 +53,8 @@ defmodule Pointers.MixProject do
   defp deps do
     Mess.deps [
       {:ecto_sql, "~> 3.8"},
-      {:flexto, "~> 0.2.3"},
-      {:pointers_ulid, git: "https://github.com/bonfire-networks/pointers_ulid", branch: "main"},
+      {:exto, "~> 0.3"},
+      {:needle_ulid, "~> 0.3"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false, override: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]

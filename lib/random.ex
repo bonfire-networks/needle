@@ -1,13 +1,13 @@
-defmodule Pointers.Random do
+defmodule Needle.Random do
   @moduledoc """
   A securely randomly generated UUID keyed table. Not pointable.
   """
 
-  alias Pointers.{ULID, Util}
+  alias Needle.{ULID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Random may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Random may only be used inside a defmodule!"
 
   def using(nil, _options),
     do: raise(CompileError, description: @must_be_in_module)
@@ -21,14 +21,14 @@ defmodule Pointers.Random do
 
     quote do
       use Ecto.Schema
-      require Pointers.Changesets
-      import Flexto
-      import Pointers.Random
+      require Needle.Changesets
+      import Exto
+      import Needle.Random
       unquote_splicing(pointers)
     end
   end
 
-  @must_use "You must use Pointers.Random before calling random_schema/1"
+  @must_use "You must use Needle.Random before calling random_schema/1"
 
   defmacro random_schema(do: body) do
     module = __CALLER__.module
@@ -53,7 +53,7 @@ defmodule Pointers.Random do
       @timestamps_opts unquote(timestamps_opts)
       schema(unquote(source)) do
         unquote(body)
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end

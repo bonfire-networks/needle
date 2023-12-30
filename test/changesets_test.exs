@@ -1,9 +1,9 @@
-defmodule Pointers.ChangesetsTest do
+defmodule Needle.ChangesetsTest do
   use ExUnit.Case
   alias Ecto.Changeset
-  alias Pointers.{Changesets, ULID}
-  alias Pointers.Test.{M, P, V}
-  doctest Pointers
+  alias Needle.{Changesets, ULID}
+  alias Needle.Test.{M, P, V}
+  doctest Needle
 
   describe "cast" do
     test "generates an id given an empty pointable" do

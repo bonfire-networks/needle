@@ -1,8 +1,8 @@
-defmodule Pointers.NotFound do
+defmodule Needle.NotFound do
   @moduledoc "We could not find the requested object"
   defexception [:message, :code]
 
-  @type t :: %Pointers.NotFound{
+  @type t :: %Needle.NotFound{
           message: binary,
           code: 404
         }

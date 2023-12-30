@@ -1,4 +1,4 @@
-# defmodule Pointers.Queries do
+# defmodule Needle.Queries do
 
 #   defmacro frum({:in, _, [{name, [], mod}, _]}=orig, args)
 #   when is_atom(name) and is_atom(mod) and is_list(args) do

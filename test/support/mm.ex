@@ -1,9 +1,9 @@
-defmodule Pointers.Test.MM do
-  use Pointers.Mixin,
-    otp_app: :pointers,
+defmodule Needle.Test.MM do
+  use Needle.Mixin,
+    otp_app: :needle,
     source: "mm"
 
-  alias Pointers.Test.M
+  alias Needle.Test.M
 
   mixin_schema do
     field(:value, :integer)

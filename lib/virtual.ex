@@ -1,4 +1,4 @@
-defmodule Pointers.Virtual do
+defmodule Needle.Virtual do
   @moduledoc """
   Sets up an Ecto Schema for a Virtual Pointable
 
@@ -12,7 +12,7 @@ defmodule Pointers.Virtual do
   ## Sample Usage
 
   ```
-  use Pointers.Virtual,
+  use Needle.Virtual,
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of view in database
     table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid ULID to identify virtual
@@ -29,7 +29,7 @@ defmodule Pointers.Virtual do
   current module. Any values provided here will override the defaults
   provided to `use`. This allows you to configure them after the fact.
 
-  Additionally, pointables use `Flexto`'s `flex_schema()`, so you can
+  Additionally, pointables use `Exto`'s `flex_schema()`, so you can
   provide additional configuration for those in the same place. Unlike
   a regular pointable, you should not add additional
   (non-virtual) fields, but it is permitted to add `has_one` /
@@ -49,11 +49,11 @@ defmodule Pointers.Virtual do
   `:otp_app` - retrieves the OTP application to which this belongs.
   """
 
-  alias Pointers.Util
+  alias Needle.Util
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Virtual may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Virtual may only be used inside a defmodule!"
 
   defp using(nil, _options),
     do: raise(RuntimeError, description: @must_be_in_module)
@@ -69,12 +69,12 @@ defmodule Pointers.Virtual do
 
     quote do
       use Ecto.Schema
-      require Flexto
-      require Pointers.Changesets
-      import Pointers.Virtual
+      require Exto
+      require Needle.Changesets
+      import Needle.Virtual
 
       # this is an attempt to help mix notice that we are using the configuration at compile
-      # time. In flexto, for reasons, we already had to use Application.get_env
+      # time. In exto, for reasons, we already had to use Application.get_env
       _dummy_compile_env = Application.compile_env(unquote(app), unquote(module))
 
       unquote_splicing(pointers)
@@ -82,12 +82,12 @@ defmodule Pointers.Virtual do
   end
 
   @bad_table_id "You must provide a ULID-formatted binary :table_id option."
-  @must_use "You must use Pointers.Virtual before calling virtual_schema/1."
+  @must_use "You must use Needle.Virtual before calling virtual_schema/1."
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
 
   defp check_table_id(x) when is_binary(x),
-    do: check_table_id_valid(x, Pointers.ULID.cast(x))
+    do: check_table_id_valid(x, Needle.ULID.cast(x))
 
   defp check_table_id(_), do: raise(ArgumentError, message: @bad_table_id)
 
@@ -114,7 +114,7 @@ defmodule Pointers.Virtual do
       unquote(Util.schema_foreign_key_type(module))
 
       schema unquote(source) do
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
         unquote(body)
       end
     end

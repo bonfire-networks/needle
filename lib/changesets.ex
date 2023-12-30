@@ -1,7 +1,7 @@
-defmodule Pointers.Changesets do
+defmodule Needle.Changesets do
   require Logger
 
-  alias Pointers.{ULID, Util}
+  alias Needle.{ULID, Util}
   alias Ecto.Association.{BelongsTo, Has, NotLoaded}
   alias Ecto.{Changeset, Schema.Metadata}
 
@@ -106,7 +106,7 @@ defmodule Pointers.Changesets do
 
     # rescue
     #   e in ArgumentError -> 
-    #     IO.warn("Pointers.Changeset: Could not put_assoc #{inspect assoc_key}")
+    #     IO.warn("Needle.Changeset: Could not put_assoc #{inspect assoc_key}")
     #     Logger.error(e)
     #     changeset
   end

@@ -1,10 +1,10 @@
-defmodule Pointers.Test.P do
-  use Pointers.Pointable,
-    otp_app: :pointers,
+defmodule Needle.Test.P do
+  use Needle.Pointable,
+    otp_app: :needle,
     table_id: "01FXJXJMDV2DACPNDS3SZYTB75",
     source: "p"
 
-  alias Pointers.Test.{M, MM, P}
+  alias Needle.Test.{M, MM, P}
 
   pointable_schema do
     belongs_to(:p, P, foreign_key: :id, define_field: false)

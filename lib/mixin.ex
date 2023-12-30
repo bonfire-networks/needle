@@ -1,4 +1,4 @@
-defmodule Pointers.Mixin do
+defmodule Needle.Mixin do
   @moduledoc """
   If a Pointer represents an object, mixins represent data about the object. Mixins collate optional
   additional information about an object. Different types of object will typically make use of
@@ -31,7 +31,7 @@ defmodule Pointers.Mixin do
   ```
   defmodule My.Mixin do
 
-    use Pointers.Mixin,
+    use Needle.Mixin,
       otp_app: :my_app,
       source: "postgres_table_name"
 
@@ -43,11 +43,11 @@ defmodule Pointers.Mixin do
   """
 
   # alias Ecto.Changeset
-  alias Pointers.{ULID, Util}
+  alias Needle.{ULID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Mixin may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Mixin may only be used inside a defmodule!"
 
   def using(nil, _options),
     do: raise(RuntimeError, description: @must_be_in_module)
@@ -61,19 +61,19 @@ defmodule Pointers.Mixin do
 
     quote do
       use Ecto.Schema
-      require Pointers.Changesets
-      import Flexto
-      import Pointers.Mixin
+      require Needle.Changesets
+      import Exto
+      import Needle.Mixin
 
       # this is an attempt to help mix notice that we are using the configuration at compile
-      # time. In flexto, for reasons, we already had to use Application.get_env
+      # time. In exto, for reasons, we already had to use Application.get_env
       _dummy_compile_env = Application.compile_env(unquote(otp_app), unquote(module))
 
       unquote_splicing(pointers)
     end
   end
 
-  @must_use "You must use Pointers.Mixin before calling mixin_schema/1"
+  @must_use "You must use Needle.Mixin before calling mixin_schema/1"
 
   defmacro mixin_schema(do: body) do
     module = __CALLER__.module
@@ -97,15 +97,15 @@ defmodule Pointers.Mixin do
       @foreign_key_type unquote(foreign_key)
       @timestamps_opts unquote(timestamps_opts)
       schema(unquote(source)) do
-        belongs_to(:pointer, Pointers.Pointer,
+        belongs_to(:pointer, Needle.Pointer,
           foreign_key: :id,
           on_replace: :update,
           primary_key: true,
-          type: Pointers.ULID
+          type: Needle.ULID
         )
 
         unquote(body)
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end

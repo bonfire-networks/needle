@@ -1,14 +1,14 @@
-defmodule Pointers.Unpointable do
+defmodule Needle.Unpointable do
   @moduledoc """
   Has a ULID primary key but is not pointable.
   """
 
   # alias Ecto.Changeset
-  alias Pointers.{ULID, Util}
+  alias Needle.{ULID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
-  @must_be_in_module "Pointers.Unpointable may only be used inside a defmodule!"
+  @must_be_in_module "Needle.Unpointable may only be used inside a defmodule!"
 
   def using(nil, _options),
     do: raise(CompileError, description: @must_be_in_module)
@@ -22,14 +22,14 @@ defmodule Pointers.Unpointable do
 
     quote do
       use Ecto.Schema
-      require Pointers.Changesets
-      import Flexto
-      import Pointers.Unpointable
+      require Needle.Changesets
+      import Exto
+      import Needle.Unpointable
       unquote_splicing(pointers)
     end
   end
 
-  @must_use "You must use Pointers.Unpointable before calling unpointable_schema/1"
+  @must_use "You must use Needle.Unpointable before calling unpointable_schema/1"
 
   defmacro unpointable_schema(do: body) do
     module = __CALLER__.module
@@ -54,7 +54,7 @@ defmodule Pointers.Unpointable do
       @timestamps_opts unquote(timestamps_opts)
       schema(unquote(source)) do
         unquote(body)
-        Flexto.flex_schema(unquote(otp_app))
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end
@@ -68,7 +68,7 @@ defmodule Pointers.Unpointable do
   end
 
   defp schema_pk(nil, autogenerate) do
-    data = Macro.escape({:id, Pointers.ULID, autogenerate: autogenerate})
+    data = Macro.escape({:id, Needle.ULID, autogenerate: autogenerate})
 
     quote do
       @primary_key unquote(data)
