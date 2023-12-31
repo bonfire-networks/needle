@@ -3,7 +3,7 @@
 [![hex.pm](https://img.shields.io/hexpm/v/needle)](https://hex.pm/packages/needle)
 [hexdocs](https://hexdocs.pm/needle)
 
-Ecto's missing universal foreign key
+Universal foreign keys, virtual schemas, and shared data mixins for Ecto
 
 > One foreign key to rule them all and in the darkness, bind them.
 
