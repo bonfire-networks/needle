@@ -1,5 +1,6 @@
 # Needle
 
+[![main](https://github.com/bonfire-networks/needle/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/bonfire-networks/needle/actions/workflows/main.yml)
 [![hex.pm](https://img.shields.io/hexpm/v/needle)](https://hex.pm/packages/needle)
 [hexdocs](https://hexdocs.pm/needle)
 

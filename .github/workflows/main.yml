@@ -1,0 +1,21 @@
+name: Main branch
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run tests
+      uses: bonfire-networks/bonfire-extension-ci-action@latest
