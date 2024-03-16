@@ -1,5 +1,3 @@
-# Code.eval_file("mess.exs", if(File.exists?("../../lib/mix/mess.exs"), do: "../../lib/mix/"))
-
 defmodule Needle.MixProject do
   use Mix.Project
 
@@ -16,7 +14,7 @@ defmodule Needle.MixProject do
     end ++
       [
         app: :needle,
-        version: "0.7.1",
+        version: "0.7.2",
         elixir: "~> 1.10",
         elixirc_paths: elixirc_paths(Mix.env()),
         start_permanent: Mix.env() == :prod,
@@ -50,12 +48,12 @@ defmodule Needle.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
-    Mess.deps([
+    [
       {:ecto_sql, "~> 3.8"},
       {:exto, "~> 0.3"},
       {:needle_ulid, "~> 0.3"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
-    ])
+    ]
   end
 end

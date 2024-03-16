@@ -118,7 +118,14 @@ defmodule Needle.Tables do
 
   # called by init/1
   defp search_path(),
-    do: [:needle | Application.fetch_env!(:needle, :search_path)]
+    do: [:needle | search_path_config()]
+
+  defp search_path_config do
+    case Application.get_env(:needle, :search_path_fun) do
+      {mod, fun} -> apply(mod, fun, [])
+      _ -> Application.fetch_env!(:needle, :search_path)
+    end
+  end
 
   def schema?(module) do
     Code.ensure_loaded?(module) and
