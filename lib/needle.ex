@@ -1,5 +1,5 @@
 defmodule Needle do
-  @moduledoc "Universal foreign keys, virtual schemas, and shared data mixins"
+  @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
 
   def is_needle?(
         schema_or_struct,
