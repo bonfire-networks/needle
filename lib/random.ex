@@ -22,7 +22,7 @@ defmodule Needle.Random do
     quote do
       use Ecto.Schema
       require Needle.Changesets
-      import Exto
+      use Exto
       import Needle.Random
       unquote_splicing(pointers)
     end

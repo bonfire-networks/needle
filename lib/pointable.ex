@@ -59,7 +59,7 @@ defmodule Needle.Pointable do
 
     quote do
       use Ecto.Schema
-      require Exto
+      use Exto
       require Needle.Changesets
       import Needle.Pointable
 

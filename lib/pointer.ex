@@ -28,7 +28,7 @@ defmodule Needle.Pointer do
   use Ecto.Schema
   alias Ecto.Changeset
   alias Needle.{Pointer, Table, Tables, ULID}
-  require Exto
+  use Exto
 
   table =
     Application.compile_env(:needle, __MODULE__, [])

@@ -23,7 +23,7 @@ defmodule Needle.Unpointable do
     quote do
       use Ecto.Schema
       require Needle.Changesets
-      import Exto
+      use Exto
       import Needle.Unpointable
       unquote_splicing(pointers)
     end

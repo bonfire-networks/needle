@@ -22,7 +22,7 @@ defmodule Needle.Form do
     quote do
       use Ecto.Schema
       require Needle.Changesets
-      import Exto
+      use Exto
       import Needle.Form
       unquote_splicing(pointers)
     end

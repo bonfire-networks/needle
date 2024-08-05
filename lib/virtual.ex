@@ -69,7 +69,7 @@ defmodule Needle.Virtual do
 
     quote do
       use Ecto.Schema
-      require Exto
+      use Exto
       require Needle.Changesets
       import Needle.Virtual
 

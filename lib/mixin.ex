@@ -62,7 +62,7 @@ defmodule Needle.Mixin do
     quote do
       use Ecto.Schema
       require Needle.Changesets
-      import Exto
+      use Exto
       import Needle.Mixin
 
       # this is an attempt to help mix notice that we are using the configuration at compile
