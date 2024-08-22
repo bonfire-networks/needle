@@ -14,7 +14,7 @@ defmodule Needle.MixProject do
     end ++
       [
         app: :needle,
-        version: "0.7.3",
+        version: "0.8.0",
         elixir: "~> 1.10",
         elixirc_paths: elixirc_paths(Mix.env()),
         start_permanent: Mix.env() == :prod,
@@ -50,7 +50,7 @@ defmodule Needle.MixProject do
   defp deps do
     [
       {:ecto_sql, "~> 3.8"},
-      {:exto, "~> 0.3"},
+      {:exto, "~> 0.4"},
       {:needle_ulid, "~> 0.3"},
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
