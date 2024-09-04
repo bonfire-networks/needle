@@ -28,7 +28,7 @@ defmodule Needle.Util do
 
   If provided a schema object, uses its `:__struct__`.
 
-  If the provided an atom which is a module name of a virtual or pointable schema, a ULID.
+  If the provided an atom which is a module name of a virtual or pointable schema, a UID.
 
   Anything else returns nil.
   """
@@ -95,9 +95,9 @@ defmodule Needle.Util do
     end
   end
 
-  # defaults the foreign key type to ULID
+  # defaults the foreign key type to UID
   def schema_foreign_key_type(module),
-    do: put_new_attribute(module, :foreign_key_type, Needle.ULID)
+    do: put_new_attribute(module, :foreign_key_type, Needle.UID)
 
   def pointers_clause(arg, value) do
     quote do
@@ -109,11 +109,20 @@ defmodule Needle.Util do
   @doc false
   def schema_primary_key(module, opts) do
     autogen = Keyword.get(opts, :autogenerate, true)
-    schema_pk(Module.get_attribute(module, :primary_key), autogen)
+    id_prefix = Keyword.get(opts, :id_prefix)
+    schema_pk(Module.get_attribute(module, :primary_key), autogen, id_prefix)
   end
 
-  defp schema_pk(nil, autogenerate) do
-    data = Macro.escape({:id, Needle.ULID, autogenerate: autogenerate})
+  defp schema_pk(nil, autogenerate, nil) do
+    data = Macro.escape({:id, Needle.UID, autogenerate: autogenerate})
+
+    quote do
+      @primary_key unquote(data)
+    end
+  end
+  
+  defp schema_pk(nil, autogenerate, id_prefix) do
+    data = Macro.escape({:id, Needle.UID, autogenerate: autogenerate, prefix: id_prefix})
 
     quote do
       @primary_key unquote(data)

@@ -3,7 +3,7 @@ defmodule Needle.Random do
   A securely randomly generated UUID keyed table. Not pointable.
   """
 
-  alias Needle.{ULID, Util}
+  alias Needle.{UID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
@@ -35,7 +35,7 @@ defmodule Needle.Random do
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
 
-  @foreign_key_type ULID
+  @foreign_key_type UID
   @timestamps_opts [type: :utc_datetime_usec]
 
   defp schema_check_attr(options, module, body) when is_list(options) do

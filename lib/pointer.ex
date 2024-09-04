@@ -3,7 +3,7 @@ defmodule Needle.Pointer do
   A Pointer is any object that can be referenced by its id.
 
   Pointer is a simple table consisting of three fields:
-  * id - the database-unique id for this pointer in ULID format.
+  * id - the database-unique id for this pointer in UID format.
   * table_id - a type tag, references `Table`.
   * deleted_at - timestamp of when the object was deleted, null by default.
 
@@ -27,15 +27,15 @@ defmodule Needle.Pointer do
   """
   use Ecto.Schema
   alias Ecto.Changeset
-  alias Needle.{Pointer, Table, Tables, ULID}
+  alias Needle.{Pointer, Table, Tables, UID}
   use Exto
 
   table =
     Application.compile_env(:needle, __MODULE__, [])
     |> Keyword.get(:source, "pointers_pointer")
 
-  @primary_key {:id, ULID, autogenerate: false}
-  @foreign_key_type ULID
+  @primary_key {:id, UID, autogenerate: false}
+  @foreign_key_type UID
   schema(table) do
     belongs_to(:table, Table)
     field(:pointed, :any, virtual: true)
@@ -44,7 +44,7 @@ defmodule Needle.Pointer do
   end
 
   @doc "Changeset for creating a Pointer"
-  def create(id \\ Needle.ULID.generate(), table) do
+  def create(id \\ Needle.UID.generate(), table) do
     table_id = Tables.id!(table)
     Changeset.cast(%Pointer{}, %{id: id, table_id: table_id}, [:id, :table_id])
   end

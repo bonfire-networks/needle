@@ -15,7 +15,7 @@ defmodule Needle.Virtual do
   use Needle.Virtual,
     otp_app: :my_app,   # your OTP application's name
     source: "my_table", # default name of view in database
-    table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid ULID to identify virtual
+    table_id: "01EBTVSZJ6X02J01R1XWWPWGZW" # valid UID to identify virtual
 
   virtual_schema do
     # ... `has_one`, `has_many`, or *virtual* fields ONLY go here.
@@ -45,7 +45,7 @@ defmodule Needle.Virtual do
   parameters:
 
   `:role` - `:virtual`.
-  `:table_id` - retrieves the ULID id of the virtual.
+  `:table_id` - retrieves the UID id of the virtual.
   `:otp_app` - retrieves the OTP application to which this belongs.
   """
 
@@ -81,13 +81,13 @@ defmodule Needle.Virtual do
     end
   end
 
-  @bad_table_id "You must provide a ULID-formatted binary :table_id option."
+  @bad_table_id "You must provide a UID-formatted binary :table_id option."
   @must_use "You must use Needle.Virtual before calling virtual_schema/1."
 
   defp get_table_id(opts), do: check_table_id(Keyword.get(opts, :table_id))
 
   defp check_table_id(x) when is_binary(x),
-    do: check_table_id_valid(x, Needle.ULID.cast(x))
+    do: check_table_id_valid(x, Needle.UID.cast(x))
 
   defp check_table_id(_), do: raise(ArgumentError, message: @bad_table_id)
 

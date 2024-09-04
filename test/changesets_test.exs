@@ -1,7 +1,7 @@
 defmodule Needle.ChangesetsTest do
   use ExUnit.Case
   alias Ecto.Changeset
-  alias Needle.{Changesets, ULID}
+  alias Needle.{Changesets, UID}
   alias Needle.Test.{M, P, V}
   doctest Needle
 
@@ -11,7 +11,7 @@ defmodule Needle.ChangesetsTest do
         %P{}
         |> Changesets.cast(%{}, [])
 
-      ULID.cast!(Changeset.get_change(cs, :id))
+      UID.cast!(Changeset.get_change(cs, :id))
     end
 
     test "generates an id given a new virtual" do
@@ -19,7 +19,7 @@ defmodule Needle.ChangesetsTest do
         %V{}
         |> Changesets.cast(%{}, [])
 
-      ULID.cast!(Changeset.get_change(cs, :id))
+      UID.cast!(Changeset.get_change(cs, :id))
     end
 
     test "does not generate an id given a new mixin" do
@@ -36,7 +36,7 @@ defmodule Needle.ChangesetsTest do
         |> Changeset.cast(%{}, [])
         |> Changesets.cast(%{}, [])
 
-      ULID.cast!(Changeset.get_change(cs, :id))
+      UID.cast!(Changeset.get_change(cs, :id))
     end
 
     test "generates an id given a changeset over a new virtual " do
@@ -45,7 +45,7 @@ defmodule Needle.ChangesetsTest do
         |> Changeset.cast(%{}, [])
         |> Changesets.cast(%{}, [])
 
-      ULID.cast!(Changeset.get_change(cs, :id))
+      UID.cast!(Changeset.get_change(cs, :id))
     end
 
     test "does not generate an id given a changeset over a new mixin " do

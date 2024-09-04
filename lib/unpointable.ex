@@ -1,10 +1,10 @@
 defmodule Needle.Unpointable do
   @moduledoc """
-  Has a ULID primary key but is not pointable.
+  Has a UID primary key but is not pointable.
   """
 
   # alias Ecto.Changeset
-  alias Needle.{ULID, Util}
+  alias Needle.{UID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
@@ -37,7 +37,7 @@ defmodule Needle.Unpointable do
   end
 
   @timestamps_opts [type: :utc_datetime_usec]
-  @foreign_key_type ULID
+  @foreign_key_type UID
 
   defp schema_check_attr(options, module, body) when is_list(options) do
     otp_app = Util.get_otp_app(options)
@@ -68,7 +68,7 @@ defmodule Needle.Unpointable do
   end
 
   defp schema_pk(nil, autogenerate) do
-    data = Macro.escape({:id, Needle.ULID, autogenerate: autogenerate})
+    data = Macro.escape({:id, Needle.UID, autogenerate: autogenerate})
 
     quote do
       @primary_key unquote(data)

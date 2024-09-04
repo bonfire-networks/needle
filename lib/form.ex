@@ -4,7 +4,7 @@ defmodule Needle.Form do
   """
 
   # alias Ecto.Changeset
-  alias Needle.{ULID, Util}
+  alias Needle.{UID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
@@ -35,7 +35,7 @@ defmodule Needle.Form do
     schema_check_attr(Module.get_attribute(module, __MODULE__), module, body)
   end
 
-  @foreign_key_type ULID
+  @foreign_key_type UID
 
   defp schema_check_attr(options, module, body) when is_list(options) do
     otp_app = Util.get_otp_app(options)

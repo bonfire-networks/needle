@@ -17,7 +17,7 @@ defmodule Needle.Tables do
   entire cache to each process that has queried it since its last
   local garbage collection.
   """
-  alias Needle.{NotFound, Table, ULID}
+  alias Needle.{NotFound, Table, UID}
   require Logger
 
   use GenServer, restart: :transient
@@ -144,7 +144,7 @@ defmodule Needle.Tables do
   # called by index/2
   defp index(mod, acc, [:id]), do: index(mod, acc, mod.__schema__(:type, :id))
   # called by index/3, the line above
-  defp index(mod, acc, ULID),
+  defp index(mod, acc, UID),
     do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
 
   # doesn't look right, skip it

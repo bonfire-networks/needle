@@ -40,9 +40,9 @@ A means of foreign keying many tables in one field. Designed for highly interlin
 > A universal foreign key is actually a hard problem. Many approaches are on offer with a variety of tradeoffs. If plugging into Bonfire's Needle-based core extensions isn't a requirement for you (i.e. you don't need to put things into feeds or use boundaries for access-control) should carefully consider a variety of approaches rather than just blindly adopting the one that fitted our project's needs the best!
 
 
-## Identifying objects - the ULID type
+## Identifying objects - the UID type
 
-All referenceable objects in the system have a unique ID (primary key) whose type is the `Needle.ULID`. [ULIDs](https://github.com/ulid/spec) are a lot like a `UUID` in that you can generate unique ones independently of the database. It's also a little different, being made up of two parts:
+All referenceable objects in the system have a unique ID (primary key) whose type is the `Needle.UID`. `UUIDv7` and [ULIDs](https://github.com/ulid/spec) are a lot like standard `UUID` in that you can generate unique ones independently of the database. It's also a little different, being made up of two parts:
 
 * The current timestamp, to millisecond precision.
 * Strong random padding for uniqueness.
@@ -51,7 +51,7 @@ This means that it naturally sorts by time to the millisecond (close enough for 
 
 If you've only worked with integer primary keys before, you are probably used to letting the database dispense an ID for you. With `ULID` (or `UUID`), IDs can be known *before* they are stored, greatly easing the process of storing a graph of data and allowing us to do more of the preparation work outside of a transaction for increased performance.
 
-In PostgreSQL, we actually store `ULID`s as `UUID` columns, thanks to both being the same size (and the lack of a `ULID` column type shipping with postgresql). You mostly will not notice this because it's handled for you, but there are a few places it can come up:
+In PostgreSQL, we actually store `UUIDv7` and `ULID`s as `UUID` columns, thanks to both being the same size (and the lack of specific column types shipping with postgresql). You mostly will not notice this because it's handled for you, but there are a few places it can come up:
 
 * Ecto debug and error output may show either binary values or UUID-formatted values.
 * Hand-written SQL may need to convert table IDs to the `UUID` format before use.
@@ -61,8 +61,8 @@ In PostgreSQL, we actually store `ULID`s as `UUID` columns, thanks to both being
 
 The `Needle` system is mostly based around a single table represented by the `Needle.Pointer` schema with the following fields:
 
-* `id` (ULID) - the database-wide unique id for the object, primary key.
-* `table_id` (ULID) - identifies the type of the object, references `Needle.Table`.
+* `id` (UID) - the database-wide unique id for the object, primary key.
+* `table_id` (UID) - identifies the type of the object, references `Needle.Table`.
 * `deleted_at` (timestamp, default: `null`) - when the object was deleted.
 
 Every object that is stored in the system will have a record in this table. It may also have records in other tables (handy for storing more than 3 fields about the object!).
@@ -100,9 +100,9 @@ end
 
 ### Picking a table id
 
-The first step to declaring a new type is picking a unique table ID in ULID format. 
+The first step to declaring a new type is picking a unique table ID in UID format. 
 
-You could just generate a random ULID, but since these IDs are special, we tend to assign a synthetic ULID that are readable as words so they stand out in debug output.
+You could just generate a random UID, but since these IDs are special, we tend to assign a synthetic UID that are readable as words so they stand out in debug output.
 
 For example, the ID for the `Feed` table is: `1TFEEDS0NTHES0V1S0FM0RTA1S`, which can be read as "It feeds on the souls of mortals". Feel free to have a little fun coming up with them, it makes debug output a little more cheery! The rules are:
 
@@ -110,20 +110,20 @@ For example, the ID for the `Feed` table is: `1TFEEDS0NTHES0V1S0FM0RTA1S`, which
 * They must be 26 characters in length.
 * The first character must be a digit in the range 0-7.
 
-To help you with this, the `Needle.ULID.synthesise!/1` method takes an alphanumeric binary and tries to return you it transliterated into a valid ULID. Example usage:
+To help you with this, the `Needle.UID.synthesise!/1` method takes an alphanumeric binary and tries to return you it transliterated into a valid UID. Example usage:
 
 ```
-iex(1)> Needle.ULID.synthesise!("itfeedsonthesouls")
+iex(1)> Needle.UID.synthesise!("itfeedsonthesouls")
 
 11:20:28.299 [error] Too short, need 9 chars.
 :ok
-iex(2)> Needle.ULID.synthesise!("itfeedsonthesoulsofmortalsandothers")
+iex(2)> Needle.UID.synthesise!("itfeedsonthesoulsofmortalsandothers")
 
 11:20:31.819 [warn]  Too long, chopping off last 9 chars
 "1TFEEDS0NTHES0V1S0FM0RTA1S"
-iex(3)> Needle.ULID.synthesise!("itfeedsonthesoulsofmortals")
+iex(3)> Needle.UID.synthesise!("itfeedsonthesoulsofmortals")
 "1TFEEDS0NTHES0V1S0FM0RTA1S"
-iex(4)> Needle.ULID.synthesise!("gtfeedsonthesoulsofmortals")
+iex(4)> Needle.UID.synthesise!("gtfeedsonthesoulsofmortals")
 
 11:21:03.268 [warn]  First character must be a digit in the range 0-7, replacing with 7
 "7TFEEDS0NTHES0V1S0FM0RTA1S"
@@ -192,7 +192,7 @@ end
 ```
 
 
-> As you can see, to declare a pointable schema, we start by using `Needle.Pointable`, providing the name of our otp application, the source table's name in the database and our chosen sentinel ULID.
+> As you can see, to declare a pointable schema, we start by using `Needle.Pointable`, providing the name of our otp application, the source table's name in the database and our chosen sentinel UID.
 
 > We then call `pointable_schema` and define any fields we wish to put directly in the table. For the most part, `pointable_schema` is like Ecto's `schema` macro, except you do not provide the table name and let it handle the primary key.
 
@@ -212,7 +212,7 @@ record or not record information for each mixin. Sample mixins include:
 
 In this way, they are reusable across different object types. One mixin may (or may not) be used by any number of objects. This is mostly driven by the type of the object we are storing, but can also be driven by user input.
 
-Mixins are just tables too! The only requirement is they have a `ULID` primary key which references `Needle.Pointer`. The developer of the mixin is free to put whatever other fields they want in the table, so long as they have that primary-key-as-reference (which will be automatically added for you by the `mixin_schema` macro). 
+Mixins are just tables too! The only requirement is they have a `UID` primary key which references `Needle.Pointer`. The developer of the mixin is free to put whatever other fields they want in the table, so long as they have that primary-key-as-reference (which will be automatically added for you by the `mixin_schema` macro). 
 
 Here is a sample mixin definition for a user profile:
 
@@ -386,7 +386,7 @@ end
 ```
 
 > As you can see, it's pretty similar to defining a regular migration, except you use `create_pointable_table` and
-`drop_pointable_table`. Notice that our sentinel ULID makes an appearance again here. It's *very* important that these match what we declared in the schema.
+`drop_pointable_table`. Notice that our sentinel UID makes an appearance again here. It's *very* important that these match what we declared in the schema.
 
 ### Mixins
 
@@ -637,10 +637,10 @@ list) can be used to obtain the IDs for a table or tables.
 All solutions to the universal primary key problem have tradeofs. Here
 are what we see as the deficiencies in our approach:
 
-1. It forces a ULID on you. This is great for us, but not
-   everyone. ULID exposes a timestamp with millisecond precision. If
-   the time of creation of a resource is sensitive information for
-   your purposes, ULIDs are not going to be suitable for you.
+1. It forces a UUIDv7 or ULID on you. This is great for us, but not
+   everyone. They both expose a timestamp with millisecond precision. 
+   If the time of creation of a resource is sensitive information for
+   your purposes, they may not going to be suitable for you.
 2. Ecto has no knowledge of the specialty of `Pointer`,
    e.g. `Repo.preload` does not work and you need to specify a join
    condition to join through a pointer. Use our functions or add extra

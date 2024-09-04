@@ -1,7 +1,7 @@
 defmodule Needle.Changesets do
   require Logger
 
-  alias Needle.{ULID, Util}
+  alias Needle.{UID, Util}
   alias Ecto.Association.{BelongsTo, Has, NotLoaded}
   alias Ecto.{Changeset, Schema.Metadata}
 
@@ -57,28 +57,29 @@ defmodule Needle.Changesets do
         else
           changeset
           |> Changeset.cast(params, cols)
-          |> put_new_id()
+          |> put_new_id(schema)
         end
 
       %schema{__meta__: %{state: :built}} ->
         if Util.role(schema) in [:pointable, :virtual] do
           changeset
           |> Changeset.cast(params, cols)
-          |> put_new_id()
+          |> put_new_id(schema)
         else
           Changeset.cast(changeset, params, cols)
         end
     end
   end
 
-  def put_new_id(changeset) do
+  def put_new_id(changeset, schema) do
     if is_binary(get_field(changeset, :id)) do
       changeset
     else
       changeset
-      |> Changeset.put_change(:id, ULID.generate())
+      |> Changeset.put_change(:id, UID.generate(schema))
     end
   end
+
 
   @doc """
   Like `Ecto.Changeset.put_assoc/3` but for Pointables, Virtuals and Mixins.
@@ -188,7 +189,7 @@ defmodule Needle.Changesets do
       nil ->
         if Util.role(assoc.related) && assoc.related_key == :id do
           # Autogenerate the id for them and copy it back
-          rel = Map.put(rel, assoc.related_key, ULID.generate())
+          rel = Map.put(rel, assoc.related_key, UID.generate()) # FIXME: what schema to generate for here?
 
           changeset
           |> Changeset.put_assoc(assoc_key, rel)
@@ -406,13 +407,6 @@ defmodule Needle.Changesets do
   defp merge_child_errors({_k, %Changeset{} = cs}, acc), do: cs.errors ++ acc
   defp merge_child_errors(_, acc), do: acc
 
-  @doc false
-  def default_id(changeset) do
-    case get_field(changeset, :id) do
-      id when is_binary(id) -> changeset
-      _ -> Changeset.put_change(changeset, :id, ULID.generate())
-    end
-  end
 
   @doc false
   def replicate_map_change(changeset, source_key, target_key, xform) do

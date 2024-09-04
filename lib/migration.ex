@@ -3,9 +3,9 @@ defmodule Needle.Migration do
 
   import Ecto.Query, only: [from: 2]
   import Ecto.Migration
-  alias Needle.{Pointer, Table, ULID}
+  alias Needle.{Pointer, Table, UID}
 
-  defdelegate init_pointers_ulid_extra(), to: ULID.Migration
+  defdelegate init_pointers_ulid_extra(), to: UID.Migration
 
   @type pointer_type :: :strong | :weak | :unbreakable
 
@@ -114,7 +114,7 @@ defmodule Needle.Migration do
 
   defp cpt(source, id, opts, body)
        when is_binary(source) and is_binary(id) and is_list(opts) do
-    Needle.ULID.cast!(id)
+    Needle.UID.cast!(id)
     opts = [primary_key: false] ++ opts
 
     quote do
@@ -135,7 +135,7 @@ defmodule Needle.Migration do
   end
 
   def create_virtual(source, id) when is_binary(source) and is_binary(id) do
-    {:ok, _} = Needle.ULID.dump(Needle.ULID.cast!(id))
+    {:ok, _} = Needle.UID.dump(Needle.UID.cast!(id))
     insert_table_record(id, source)
     create_virtual_view(source, id)
     create_virtual_trigger(source, id)
@@ -152,7 +152,7 @@ defmodule Needle.Migration do
   end
 
   def drop_pointable_table(name, id) when is_binary(name) and is_binary(id) do
-    Needle.ULID.cast!(id)
+    Needle.UID.cast!(id)
     drop_pointable_triggers(name)
     drop_table(name)
     delete_table_record(id)
@@ -163,7 +163,7 @@ defmodule Needle.Migration do
   end
 
   def drop_virtual(name, id) when is_binary(name) and is_binary(id) do
-    Needle.ULID.cast!(id)
+    Needle.UID.cast!(id)
     drop_virtual_trigger(name)
     drop_virtual_view(name)
     delete_table_record(id)
@@ -179,7 +179,7 @@ defmodule Needle.Migration do
   def migrate_virtual(:up, name, id), do: create_virtual(name, id)
   def migrate_virtual(:down, name, id), do: drop_virtual(name, id)
 
-  @doc "Creates a mixin table - one with a ULID primary key and no trigger"
+  @doc "Creates a mixin table - one with a UID primary key and no trigger"
   @spec create_mixin_table(name :: atom | binary, opts :: list, body :: term) ::
           nil
   defmacro create_mixin_table(name, opts \\ [], body) do
@@ -424,7 +424,7 @@ defmodule Needle.Migration do
 
   @doc false
   def create_pointable_triggers(table_id, source) do
-    {:ok, table_id} = Needle.ULID.dump(Needle.ULID.cast!(table_id))
+    {:ok, table_id} = Needle.UID.dump(Needle.UID.cast!(table_id))
     pointer = Pointer.__schema__(:source)
     table_id = Ecto.UUID.cast!(table_id)
     # because there is no create trigger if not exists
@@ -492,7 +492,7 @@ defmodule Needle.Migration do
 
   @doc false
   def create_virtual_trigger(table, id) do
-    {:ok, id} = Needle.ULID.dump(Needle.ULID.cast!(id))
+    {:ok, id} = Needle.UID.dump(Needle.UID.cast!(id))
     id = Ecto.UUID.cast!(id)
     # because there is no create trigger if not exists
     drop_virtual_trigger(table)
@@ -514,7 +514,7 @@ defmodule Needle.Migration do
 
   @doc false
   def create_virtual_view(source, id) do
-    {:ok, id} = Needle.ULID.dump(Needle.ULID.cast!(id))
+    {:ok, id} = Needle.UID.dump(Needle.UID.cast!(id))
     id = Ecto.UUID.cast!(id)
     pointers = Pointer.__schema__(:source)
 
@@ -540,8 +540,8 @@ defmodule Needle.Migration do
   # Insert a Table record. Not required when using `create_pointable_table`
   @doc false
   def insert_table_record(id, name) do
-    {:ok, table_id} = Needle.ULID.dump(Table.__pointers__(:table_id))
-    {:ok, id} = Needle.ULID.dump(Needle.ULID.cast!(id))
+    {:ok, table_id} = Needle.UID.dump(Table.__pointers__(:table_id))
+    {:ok, id} = Needle.UID.dump(Needle.UID.cast!(id))
     table = table_name(name)
     opts = [on_conflict: :nothing]
 
@@ -561,7 +561,7 @@ defmodule Needle.Migration do
   # Delete a Table record. Not required when using `drop_pointable_table`
   @doc false
   def delete_table_record(id) do
-    {:ok, id} = Needle.ULID.dump(Needle.ULID.cast!(id))
+    {:ok, id} = Needle.UID.dump(Needle.UID.cast!(id))
     table = Table.__schema__(:source)
     repo().delete_all(from(t in table, where: t.id == ^id))
   end

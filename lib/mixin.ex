@@ -43,7 +43,7 @@ defmodule Needle.Mixin do
   """
 
   # alias Ecto.Changeset
-  alias Needle.{ULID, Util}
+  alias Needle.{UID, Util}
 
   defmacro __using__(options), do: using(__CALLER__.module, options)
 
@@ -81,7 +81,7 @@ defmodule Needle.Mixin do
   end
 
   @timestamps_opts [type: :utc_datetime_usec]
-  @foreign_key_type ULID
+  @foreign_key_type UID
 
   defp schema_check_attr(options, module, body) when is_list(options) do
     otp_app = Util.get_otp_app(options)
@@ -101,7 +101,7 @@ defmodule Needle.Mixin do
           foreign_key: :id,
           on_replace: :update,
           primary_key: true,
-          type: Needle.ULID
+          type: Needle.UID
         )
 
         unquote(body)
