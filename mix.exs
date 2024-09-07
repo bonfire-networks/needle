@@ -51,7 +51,10 @@ defmodule Needle.MixProject do
     [
       {:ecto_sql, "~> 3.8"},
       {:exto, "~> 0.4"},
-      {:needle_uid, "~> 0.1"},
+      {:needle_uid, 
+        #"~> 0.0.1",
+        git: "https://github.com/bonfire-networks/needle_uid"
+      },
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
