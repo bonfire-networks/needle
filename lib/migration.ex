@@ -523,6 +523,8 @@ defmodule Needle.Migration do
     select id as id from "#{pointers}"
     where table_id = ('#{id}' :: uuid) and deleted_at is null
     """)
+
+    # TODO? should we manually create an index for the view?
   end
 
   @doc false
