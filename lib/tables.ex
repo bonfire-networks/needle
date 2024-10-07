@@ -106,9 +106,11 @@ defmodule Needle.Tables do
     |> Enum.filter(&in_roles?(&1, [:mixin]))
   end
 
-  defp build_index() do
+  @doc false
+  def build_index() do
     search_modules()
     |> Enum.filter(&in_roles?(&1, [:pointable, :virtual]))
+    |> IO.inspect()
     |> Enum.reduce(%{}, &index/2)
   end
 
@@ -133,7 +135,8 @@ defmodule Needle.Tables do
   end
 
   # called by init/1
-  defp in_roles?(module, roles) do
+  @doc false
+  def in_roles?(module, roles) do
     schema?(module) and
       function_exported?(module, :__pointers__, 1) and
       module.__pointers__(:role) in roles
@@ -144,6 +147,8 @@ defmodule Needle.Tables do
   # called by index/2
   defp index(mod, acc, [:id]), do: index(mod, acc, mod.__schema__(:type, :id))
   # called by index/3, the line above
+  defp index(mod, acc, {:parameterized, {UID, _}}),
+    do: index(mod, acc, UID)
   defp index(mod, acc, UID),
     do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
 
