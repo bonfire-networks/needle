@@ -129,7 +129,7 @@ defmodule Needle.Util do
     end
   end
 
-  defp schema_pk(_, _), do: :ok
+  defp schema_pk(_, _, _), do: :ok
 
   @doc "Builds an index of objects by id"
   def index_objects_by_id(items) do
