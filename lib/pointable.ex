@@ -58,7 +58,8 @@ defmodule Needle.Pointable do
     pointers = emit_pointers(config ++ options)
 
     quote do
-      use Ecto.Schema
+      # use Ecto.Schema
+      use TypedEctoSchema
       use Exto
       require Needle.Changesets
       import Needle.Pointable
@@ -113,7 +114,7 @@ defmodule Needle.Pointable do
         )
       )
 
-      schema unquote(source) do
+      typed_schema unquote(source) do
         unquote(body)
         Exto.flex_schema(unquote(otp_app))
       end

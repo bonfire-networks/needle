@@ -10,13 +10,13 @@ defmodule Needle.Table do
     table_id: "601NTERTAB1EF0RA11TAB1ES00",
     autogenerate: false
 
-  import Ecto.Schema
+  # import Ecto.Schema
 
-  @type t :: %Needle.Table{
-          table: binary,
-          schema: atom | nil,
-          pointed: term | nil
-        }
+  # @type t :: %Needle.Table{
+  #         table: binary,
+  #         schema: atom | nil,
+  #         pointed: term | nil
+  #       }
 
   pointable_schema do
     field(:table, :string)

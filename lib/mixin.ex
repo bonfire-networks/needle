@@ -60,9 +60,10 @@ defmodule Needle.Mixin do
     pointers = emit_pointers(config ++ options)
 
     quote do
-      use Ecto.Schema
-      require Needle.Changesets
+      # use Ecto.Schema
+      use TypedEctoSchema
       use Exto
+      require Needle.Changesets
       import Needle.Mixin
 
       # this is an attempt to help mix notice that we are using the configuration at compile
@@ -96,7 +97,7 @@ defmodule Needle.Mixin do
       @primary_key false
       @foreign_key_type unquote(foreign_key)
       @timestamps_opts unquote(timestamps_opts)
-      schema(unquote(source)) do
+      typed_schema(unquote(source)) do
         belongs_to(:pointer, Needle.Pointer,
           foreign_key: :id,
           on_replace: :update,
