@@ -114,8 +114,8 @@ defmodule Needle.Virtual do
       unquote(Util.schema_foreign_key_type(module))
 
       schema unquote(source) do
-        Exto.flex_schema(unquote(otp_app))
         unquote(body)
+        Exto.flex_schema(unquote(otp_app))
       end
     end
   end
