@@ -15,5 +15,4 @@ defmodule Needle do
           schema.__pointers__(:role) in one_of_types
 
   def is_needle?(_, _), do: false
-  
 end

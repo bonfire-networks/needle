@@ -120,7 +120,7 @@ defmodule Needle.Util do
       @primary_key unquote(data)
     end
   end
-  
+
   defp schema_pk(nil, autogenerate, id_prefix) do
     data = Macro.escape({:id, Needle.UID, autogenerate: autogenerate, prefix: id_prefix})
 

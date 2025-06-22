@@ -80,7 +80,6 @@ defmodule Needle.Changesets do
     end
   end
 
-
   @doc """
   Like `Ecto.Changeset.put_assoc/3` but for Pointables, Virtuals and Mixins.
 
@@ -189,7 +188,8 @@ defmodule Needle.Changesets do
       nil ->
         if Util.role(assoc.related) && assoc.related_key == :id do
           # Autogenerate the id for them and copy it back
-          rel = Map.put(rel, assoc.related_key, UID.generate()) # FIXME: what schema to generate for here?
+          #  FIXME: what schema to generate for here?
+          rel = Map.put(rel, assoc.related_key, UID.generate())
 
           changeset
           |> Changeset.put_assoc(assoc_key, rel)
@@ -406,7 +406,6 @@ defmodule Needle.Changesets do
 
   defp merge_child_errors({_k, %Changeset{} = cs}, acc), do: cs.errors ++ acc
   defp merge_child_errors(_, acc), do: acc
-
 
   @doc false
   def replicate_map_change(changeset, source_key, target_key, xform) do

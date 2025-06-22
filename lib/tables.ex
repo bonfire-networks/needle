@@ -149,6 +149,7 @@ defmodule Needle.Tables do
   # called by index/3, the line above
   defp index(mod, acc, {:parameterized, {UID, _}}),
     do: index(mod, acc, UID)
+
   defp index(mod, acc, UID),
     do: index(mod, acc, mod.__pointers__(:table_id), mod.__schema__(:source))
 
