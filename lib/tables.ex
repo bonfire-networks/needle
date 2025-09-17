@@ -110,7 +110,7 @@ defmodule Needle.Tables do
   def build_index() do
     search_modules()
     |> Enum.filter(&in_roles?(&1, [:pointable, :virtual]))
-    |> IO.inspect()
+    # |> IO.inspect()
     |> Enum.reduce(%{}, &index/2)
   end
 
