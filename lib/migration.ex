@@ -12,45 +12,58 @@ defmodule Needle.Migration do
   @doc "Creates a strong, weak or unbreakable pointer depending on `type`."
   @spec pointer(type :: pointer_type) :: term
   @spec pointer(module :: atom, type :: pointer_type) :: term
-  def pointer(table \\ Pointer, type)
-  def pointer(table, :strong), do: strong_pointer(table)
-  def pointer(table, :weak), do: weak_pointer(table)
-  def pointer(table, :unbreakable), do: unbreakable_pointer(table)
+  def pointer(table \\ Pointer, type) do
+    on_delete =
+      case type do
+        :strong -> :delete_all
+        :weak -> :nilify_all
+        :unbreakable -> :restrict
+      end
+
+    references(table.__schema__(:source),
+      type: :uuid,
+      on_update: :update_all,
+      on_delete: on_delete
+    ) 
+  end
 
   @doc """
   A reference to a pointer for use with `add/3`. A strong pointer will
   be deleted when the thing it's pointing to is deleted.
   """
-  def strong_pointer(table \\ Pointer) do
-    references(table.__schema__(:source),
-      type: :uuid,
-      on_update: :update_all,
-      on_delete: :delete_all
-    )
-  end
+  def strong_pointer(table \\ Pointer), do: pointer(table, :strong)
 
   @doc """
   A reference to a pointer for use with `add/3`. A weak pointer will
   be set null when the thing it's pointing to is deleted.
   """
-  def weak_pointer(table \\ Pointer) do
-    references(table.__schema__(:source),
-      type: :uuid,
-      on_update: :update_all,
-      on_delete: :nilify_all
-    )
-  end
+  def weak_pointer(table \\ Pointer), do: pointer(table, :weak)
 
   @doc """
   A reference to a pointer for use with `add/3`. An unbreakable
   pointer will prevent the thing it's pointing to from being deleted.
   """
-  def unbreakable_pointer(table \\ Pointer) do
-    references(table.__schema__(:source),
-      type: :uuid,
-      on_update: :update_all,
-      on_delete: :restrict
-    )
+  def unbreakable_pointer(table \\ Pointer), do: pointer(table, :unbreakable)
+
+  @doc """
+  Adds a pointer field only.
+
+  ## Example
+      add_pointer(:thread_id, :weak, Pointer, unique: true)
+  """
+  def add_pointer(field, type, table \\ Pointer, opts \\ []) do
+    add(field, pointer(table, type))
+  end
+
+  @doc """
+  Adds a pointer field and an index for it.
+
+  ## Example
+      add_pointer_with_index(:thread_id, :strong, Pointer, unique: false)
+  """
+  def add_pointer_with_index(field, type, table \\ Pointer, opts \\ []) do
+    add_pointer(field, type, table, opts)
+    create_if_not_exists(index(table.__schema__(:source), field, opts))
   end
 
   defp table_name(name) when is_atom(name), do: Atom.to_string(name)
