@@ -14,7 +14,7 @@ defmodule Needle.Migration.Indexable do
   end
 
  @doc """
-  Adds a pointer field and an index for it.
+  Adds a pointer field and an index for it. Note: this uses `alter table` and can't be run in the same migration as the `create table` call for the same table.
 
   ## Example
       create_pointer_with_index(:my_table, :thread_id, :strong, Needle.Pointer, unique: false)
