@@ -12,15 +12,17 @@ defmodule Needle.Migration do
   @doc "Creates a strong, weak or unbreakable pointer depending on `type`."
   @spec pointer(type :: pointer_type) :: term
   @spec pointer(module :: atom, type :: pointer_type) :: term
-  def pointer(table \\ Pointer, type) do
+  def pointer(ref_table \\ Pointer, type) do
     on_delete =
       case type do
-        :strong -> :delete_all
-        :weak -> :nilify_all
-        :unbreakable -> :restrict
+        :strong -> :delete_all # pointer will be deleted when the thing it's pointing to is deleted
+        :cascade -> :delete_all # alias of :strong  
+        :weak -> :nilify_all # pointer will be set null when the thing it's pointing to is deleted.
+        :nilify -> :nilify_all # alias of :weak
+        :unbreakable -> :restrict # will prevent the thing it's pointing to from being deleted
       end
 
-    references(table.__schema__(:source),
+    references(ref_table.__schema__(:source),
       type: :uuid,
       on_update: :update_all,
       on_delete: on_delete
@@ -31,40 +33,40 @@ defmodule Needle.Migration do
   A reference to a pointer for use with `add/3`. A strong pointer will
   be deleted when the thing it's pointing to is deleted.
   """
-  def strong_pointer(table \\ Pointer), do: pointer(table, :strong)
+  def strong_pointer(ref_table \\ Pointer), do: pointer(ref_table, :strong)
 
   @doc """
   A reference to a pointer for use with `add/3`. A weak pointer will
   be set null when the thing it's pointing to is deleted.
   """
-  def weak_pointer(table \\ Pointer), do: pointer(table, :weak)
+  def weak_pointer(ref_table \\ Pointer), do: pointer(ref_table, :weak)
 
   @doc """
   A reference to a pointer for use with `add/3`. An unbreakable
   pointer will prevent the thing it's pointing to from being deleted.
   """
-  def unbreakable_pointer(table \\ Pointer), do: pointer(table, :unbreakable)
+  def unbreakable_pointer(ref_table \\ Pointer), do: pointer(ref_table, :unbreakable)
 
   @doc """
-  Adds a pointer field only.
+  Adds a pointer field inside a `create table` or `create_mixin_table` block.
 
   ## Example
-      add_pointer(:thread_id, :weak, Pointer, unique: true)
+      add_pointer(:thread_id, :weak, Needle.Pointer, unique: true)
   """
-  def add_pointer(field, type, table \\ Pointer, opts \\ []) do
-    add(field, pointer(table, type))
+  def add_pointer(field, type, ref_table \\ Pointer, opts \\ []) do
+    Ecto.Migration.add(field, pointer(ref_table, type), opts)
   end
 
   @doc """
-  Adds a pointer field and an index for it.
+  Adds a pointer field only if it does not exist, for use in `alter table` blocks.
 
   ## Example
-      add_pointer_with_index(:thread_id, :strong, Pointer, unique: false)
+      add_pointer_if_not_exists(:thread_id, :weak, Needle.Pointer, unique: true)
   """
-  def add_pointer_with_index(field, type, table \\ Pointer, opts \\ []) do
-    add_pointer(field, type, table, opts)
-    create_if_not_exists(index(table.__schema__(:source), field, opts))
+  def add_pointer_if_not_exists(field, type, ref_table \\ Pointer, opts \\ []) do
+    Ecto.Migration.add_if_not_exists(field, pointer(ref_table, type), opts)
   end
+
 
   defp table_name(name) when is_atom(name), do: Atom.to_string(name)
   defp table_name(name) when is_binary(name), do: name
