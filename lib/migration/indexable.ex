@@ -2,7 +2,7 @@ defmodule Needle.Migration.Indexable do
   @moduledoc "Helpers for creating indexes on pointer fields in migrations."
 
   import Ecto.Migration
-    import Needle.Migration
+  import Needle.Migration
 
   defmacro __using__(_opts \\ []) do
     quote do
