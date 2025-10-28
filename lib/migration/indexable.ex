@@ -30,7 +30,7 @@ defmodule Needle.Migration.Indexable do
   Creates index for a pointer field on a table.
   """
   def create_index_for_pointer(table_name, fields, opts \\ []) do
-    create_if_not_exists(index(table_name, List.wrap(fields), Keyword.put_new(opts, :concurrently, true)))
+    create_if_not_exists(index(table_name, List.wrap(fields), Keyword.put_new(opts, :concurrently, System.get_env("DB_MIGRATE_INDEXES_CONCURRENTLY") != "false")))
   end
 
   @doc """
