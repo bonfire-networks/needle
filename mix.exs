@@ -49,12 +49,12 @@ defmodule Needle.MixProject do
 
   defp deps do
     [
-      {:ecto_sql, "~> 3.8"},
+      {:ecto_sql, "~> 3.13"},
       {:typed_ecto_schema, "~> 0.4.1", runtime: false},
       {:exto, "~> 0.4"},
       {:needle_uid, 
-        #"~> 0.0.1",
-        git: "https://github.com/bonfire-networks/needle_uid"
+        "~> 0.0.2",
+        # git: "https://github.com/bonfire-networks/needle_uid"
       },
       {:telemetry, "~> 0.4 or ~> 1.0", optional: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
