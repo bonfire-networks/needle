@@ -34,6 +34,15 @@ defmodule Needle.Migration.Indexable do
   end
 
   @doc """
+  Drops an index for a pointer field on a table (if it exists). `concurrently` defaults from
+  `DB_MIGRATE_INDEXES_CONCURRENTLY` like `create_index_for_pointer/3`; a concurrent drop requires
+  the migration to set `@disable_ddl_transaction true` (done by `use Needle.Migration.Indexable`).
+  """
+  def drop_index_for_pointer(table_name, fields, opts \\ []) do
+    drop_if_exists(index(table_name, List.wrap(fields), Keyword.put_new(opts, :concurrently, System.get_env("DB_MIGRATE_INDEXES_CONCURRENTLY") != "false")))
+  end
+
+  @doc """
   Bulk-creates indexes for pointer fields on a table.
 
   ## Examples

@@ -300,7 +300,11 @@ defmodule Needle.Migration do
     end
 
     create_if_not_exists(unique_index(table, :table))
-    create_if_not_exists(index(pointer, :table_id))
+
+    # Plain (not CONCURRENTLY) since init runs in a DDL transaction on an empty table. Supersedes
+    # the old single-column (table_id) index, dropped for existing DBs in a dated migration.
+    add_pointer_covering_index(concurrently: false)
+
     flush()
     add_is_not_deleted(pointer)
     create_pointers_trigger_function()
@@ -316,10 +320,40 @@ defmodule Needle.Migration do
     drop_pointers_trigger_function()
     drop_pointable_trigger_function()
     drop_virtual_trigger_function()
+    # legacy single-column index (older DBs) + its covering-index replacement
     drop_if_exists(index(pointer, :table_id))
+    drop_pointer_covering_index()
     drop_if_exists(index(table, :table))
     drop_table(pointer)
     drop_table(table)
+  end
+
+  @pointer_covering_index_name :pointers_pointer_alive_type_id_idx
+
+  @doc """
+  Adds a partial covering index on `pointers_pointer (table_id, id) WHERE deleted_at IS NULL`.
+
+  This matches the ubiquitous pointer access shape — virtual-view scans (`table_id = X`),
+  feed/type filters (`table_id IN (...)`), and keyset pagination (`ORDER BY id DESC`) — all of
+  which currently fall back to a PK scan that filters by `table_id`/`deleted_at`. The two-column
+  partial index enables index-only scans (virtual views select only `id`) and serves `id DESC`
+  via a backward scan, so no `DESC` is needed.
+
+  `concurrently` is env-driven (`DB_MIGRATE_INDEXES_CONCURRENTLY`) via `create_index_for_pointer`;
+  the calling migration must set `@disable_ddl_transaction true` (e.g. `use Needle.Migration.Indexable`).
+  """
+  def add_pointer_covering_index(opts \\ []) do
+    Needle.Migration.Indexable.create_index_for_pointer(
+      Pointer.__schema__(:source),
+      [:table_id, :id],
+      Keyword.merge([where: "deleted_at IS NULL", name: @pointer_covering_index_name], opts)
+    )
+  end
+
+  def drop_pointer_covering_index do
+    drop_if_exists(
+      index(Pointer.__schema__(:source), [:table_id, :id], name: @pointer_covering_index_name)
+    )
   end
 
   def add_is_not_deleted(table) do
