@@ -60,11 +60,43 @@ defmodule Needle.Migration do
   @doc """
   Adds a pointer field only if it does not exist, for use in `alter table` blocks.
 
+  WARNING: not fully idempotent — ecto_sql renders `add_if_not_exists` + a reference as `ADD COLUMN IF NOT EXISTS ..., ADD CONSTRAINT ..._fkey ...`, and Postgres does NOT skip the constraint clause when the column already exists, so a re-run errors with `duplicate_object`.
+  Prefer `alter_add_pointer_if_not_exists/4` (which owns the whole `alter table`) in migrations that may run more than once.
+
   ## Example
       add_pointer_if_not_exists(:thread_id, :weak, Needle.Pointer, unique: true)
   """
   def add_pointer_if_not_exists(field, type, ref_table \\ Pointer, opts \\ []) do
     Ecto.Migration.add_if_not_exists(field, pointer(ref_table, type), opts)
+  end
+
+  @doc """
+  Idempotently adds a pointer field to an existing table, wrapping its own `alter table`.
+
+  Unlike `add_pointer_if_not_exists/4` (for use inside an `alter table` block), this checks whether the column exists first and skips the whole alter when it does, including the FK constraint, which ecto_sql would otherwise re-add unguarded.
+
+  ## Example
+      alter_add_pointer_if_not_exists("bonfire_data_shared_user_accounts", :user_id, :weak)
+  """
+  defmacro alter_add_pointer_if_not_exists(table, field, type, opts \\ []) do
+    quote bind_quoted: [table: table, field: field, type: type, opts: opts] do
+      unless Needle.Migration.column_exists?(repo(), table, field) do
+        alter table(table) do
+          Needle.Migration.add_pointer(field, type, Needle.Pointer, opts)
+        end
+      end
+    end
+  end
+
+  @doc "Whether `column` exists on `table` (both may be atoms or strings), for migration guards."
+  def column_exists?(repo, table, column) do
+    %{rows: [[exists]]} =
+      repo.query!(
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2)",
+        [table_name(table), table_name(column)]
+      )
+
+    exists
   end
 
 
