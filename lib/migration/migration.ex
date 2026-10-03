@@ -412,13 +412,13 @@ defmodule Needle.Migration do
       begin
         if (TG_OP = 'UPDATE') then
           if (OLD.deleted_at is null and NEW.deleted_at is not null) then
-            select 'delete from "' || TG_ARGV[0] || '" where id = ''' | OLD.id | ''' :: uuid' into query;
+            select 'delete from "' || TG_ARGV[0] || '" where id = ''' || OLD.id || ''' :: uuid' into query;
             execute query;
           end if;
           return NEW;
         elsif (TG_OP = 'DELETE') then
           if (OLD.deleted_at is null) then
-            select 'delete from "' || TG_ARGV[0] || '" where id = ''' | OLD.id | ''' :: uuid' into query;
+            select 'delete from "' || TG_ARGV[0] || '" where id = ''' || OLD.id || ''' :: uuid' into query;
             execute query;
           end if;
           return OLD;
