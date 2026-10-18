@@ -50,7 +50,11 @@ defmodule Needle.Pointers do
 
   If the type is set to a Pointable, Virtual or Mixin schema, records
   will be selected from that schema directly. It is assumed this
-  filters deleted records by construction.
+  filters deleted records by construction: a virtual's view only lists
+  pointers with no `deleted_at`, and a pointable's record is deleted by
+  a trigger when its pointer is marked deleted (see the README's
+  "Pointables"), losing the record's own fields: restoring it means
+  inserting it again.
 
   Otherwise, will query from Pointer, filtering not is_nil(deleted_at)
   """
