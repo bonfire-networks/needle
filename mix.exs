@@ -50,7 +50,7 @@ defmodule Needle.MixProject do
   defp deps do
     [
       {:ecto_sql, "~> 3.13"},
-      {:typed_ecto_schema, "~> 0.4.1", runtime: false},
+      {:typed_ecto_schema, "~> 0.4.1 or ~> 0.5.0", runtime: false},
       {:exto, "~> 0.4"},
       {:needle_uid, 
         "~> 0.0.2",
