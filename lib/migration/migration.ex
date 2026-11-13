@@ -13,6 +13,9 @@ defmodule Needle.Migration do
   @spec pointer(type :: pointer_type) :: term
   @spec pointer(module :: atom, type :: pointer_type) :: term
   def pointer(ref_table \\ Pointer, type) do
+    # a table name is accepted as well as a schema module, for tables whose schema reads from a view
+    source = if is_binary(ref_table), do: ref_table, else: ref_table.__schema__(:source)
+
     on_delete =
       case type do
         :strong -> :delete_all # pointer will be deleted when the thing it's pointing to is deleted
@@ -22,7 +25,7 @@ defmodule Needle.Migration do
         :unbreakable -> :restrict # will prevent the thing it's pointing to from being deleted
       end
 
-    references(ref_table.__schema__(:source),
+    references(source,
       type: :uuid,
       on_update: :update_all,
       on_delete: on_delete
@@ -611,6 +614,241 @@ defmodule Needle.Migration do
   @doc false
   def drop_virtual_view(source),
     do: execute(~s[drop view if exists "#{source}"])
+
+  @doc """
+  Creates a writable view joining `table` with its mixin tables, and the trigger that routes writes to them.
+
+  `base_columns` are the table's columns (including `id`) and `mixins` is a list of `{mixin_source, [columns]}` or `{mixin_source, [columns], opts}`.
+
+  A mixin is left-joined, so a row with no mixin row still shows. With `required: true` it is inner-joined instead, which lets an index on its columns serve an order or filter on them (a left join has to join every row before it can order), but a row with no mixin row then disappears from the view: every row must have one, even with only nulls. Inserts through the view always write one; a data move must too.
+
+  The view selects `t.*`, so drop a column from `table` (once its data is moved into the mixin) before creating a view that takes the same column from a mixin, else Postgres refuses the view with `column specified more than once`.
+  """
+  def create_mixin_view(table, view, base_columns, mixins) do
+    mixins = normalise_mixins(mixins)
+    execute(mixin_view_sql(table, view, mixins))
+    execute(mixin_view_trigger_function_sql(table, view, base_columns, mixins))
+    # there is no create trigger if not exists
+    execute(~s[drop trigger if exists #{quote_ident(view <> "_mixin_view_trigger")} on #{quote_ident(view)}])
+    execute(mixin_view_create_trigger_sql(view))
+  end
+
+  @doc "Drops a view made by `create_mixin_view/4`, with its trigger function."
+  def drop_mixin_view(view) do
+    execute(~s[drop view if exists #{quote_ident(view)}])
+    execute(~s[drop function if exists #{quote_ident(mixin_view_function_name(view))}() cascade])
+  end
+
+  @doc """
+  Moves columns of `table` into mixin tables, and creates the writable view (`create_mixin_view/4`) that a schema then uses as its source: copies each mixin's columns (`mixin_copy_sql/2`), drops them from the table, then creates the view from the table's remaining columns. For a migration's `up`; `move_columns_from_mixins/3` is its `down`.
+
+  The mixin tables must exist, with the same column names. `mixins` as in `create_mixin_view/4`.
+  """
+  def move_columns_to_mixins(table, view, mixins) do
+    mixins = normalise_mixins(mixins)
+
+    for mixin <- mixins, do: execute(mixin_copy_sql(table, mixin))
+    execute(drop_columns_sql(table, Enum.flat_map(mixins, fn {_, cols, _} -> cols end)))
+    # run the above before reading the table's remaining columns
+    flush()
+
+    create_mixin_view(table, view, table_columns(table), mixins)
+  end
+
+  @doc "Undoes `move_columns_to_mixins/3`: drops the view, adds the columns back to `table` with the types they have in the mixins, and copies the values back. The mixin rows stay, as other tables may share the mixin."
+  def move_columns_from_mixins(table, view, mixins) do
+    mixins = normalise_mixins(mixins)
+
+    drop_mixin_view(view)
+
+    columns =
+      Enum.flat_map(mixins, fn {source, cols, _} ->
+        types = column_types(source)
+        for col <- cols, do: {col, Map.fetch!(types, col)}
+      end)
+
+    execute(add_columns_sql(table, columns))
+    for mixin <- mixins, do: execute(mixin_copy_back_sql(table, mixin))
+  end
+
+  @doc "SQL copying a mixin's columns from `table` into the mixin table: every row for a `required` mixin (the view inner-joins it, so a row without one would disappear), else only rows where one of its columns has a value."
+  def mixin_copy_sql(table, mixin) do
+    [{source, cols, opts}] = normalise_mixins([mixin])
+    all = ["id" | cols]
+    qcols = Enum.map_join(all, ", ", &quote_ident/1)
+    sets = Enum.map_join(cols, ", ", &"#{quote_ident(&1)} = excluded.#{quote_ident(&1)}")
+
+    where =
+      if opts[:required],
+        do: "",
+        else: " where " <> Enum.map_join(cols, " or ", &"#{quote_ident(&1)} is not null")
+
+    """
+    insert into #{quote_ident(source)} (#{qcols})
+    select #{qcols} from #{quote_ident(table)}#{where}
+    on conflict ("id") do update set #{sets}
+    """
+  end
+
+  @doc "SQL copying a mixin's columns back into `table`, for `move_columns_from_mixins/3`."
+  def mixin_copy_back_sql(table, mixin) do
+    [{source, cols, _opts}] = normalise_mixins([mixin])
+    sets = Enum.map_join(cols, ", ", &"#{quote_ident(&1)} = m.#{quote_ident(&1)}")
+
+    ~s[update #{quote_ident(table)} t set #{sets} from #{quote_ident(source)} m where m."id" = t."id"]
+  end
+
+  @doc "SQL dropping `columns` from `table` in one statement."
+  def drop_columns_sql(table, columns),
+    do: "alter table #{quote_ident(table)} " <> Enum.map_join(columns, ", ", &"drop column #{quote_ident(&1)}")
+
+  @doc "SQL adding `{column, sql_type}` columns to `table` in one statement."
+  def add_columns_sql(table, columns),
+    do:
+      "alter table #{quote_ident(table)} " <>
+        Enum.map_join(columns, ", ", fn {col, type} -> "add column #{quote_ident(col)} #{type}" end)
+
+  # the table's columns as they are on this database, rather than a list that could miss one added later
+  defp table_columns(table) do
+    repo().query!(
+      "select column_name from information_schema.columns where table_name = $1 and table_schema = current_schema() order by ordinal_position",
+      [table]
+    ).rows
+    |> List.flatten()
+  end
+
+  # column name => its SQL type, as `format_type` writes it (eg. "timestamp with time zone")
+  defp column_types(table) do
+    repo().query!(
+      "select a.attname, format_type(a.atttypid, a.atttypmod) from pg_attribute a where a.attrelid = ($1::text)::regclass and a.attnum > 0 and not a.attisdropped",
+      [table]
+    ).rows
+    |> Map.new(fn [name, type] -> {name, type} end)
+  end
+
+  @doc "The SQL of a view selecting every column of `table` and the listed columns of each mixin, joined on `id` (see `create_mixin_view/4` for `required`)."
+  def mixin_view_sql(table, view, mixins) do
+    indexed = Enum.with_index(normalise_mixins(mixins), 1)
+
+    columns =
+      for {{_source, cols, _opts}, i} <- indexed, col <- cols do
+        "#{mixin_alias(i)}.#{quote_ident(col)}"
+      end
+
+    joins =
+      for {{source, _cols, opts}, i} <- indexed do
+        join = if opts[:required], do: "join", else: "left join"
+        "#{join} #{quote_ident(source)} #{mixin_alias(i)} on #{mixin_alias(i)}.\"id\" = t.\"id\""
+      end
+
+    """
+    create or replace view #{quote_ident(view)} as
+    select #{Enum.join(["t.*" | columns], ", ")}
+    from #{quote_ident(table)} t
+    #{Enum.join(joins, "\n")}
+    """
+  end
+
+  @doc "The SQL of the trigger function and the `instead of` trigger that make the view from `mixin_view_sql/3` writable."
+  def mixin_view_trigger_sql(table, view, base_columns, mixins) do
+    mixin_view_trigger_function_sql(table, view, base_columns, mixins) <>
+      ";\n" <> mixin_view_create_trigger_sql(view)
+  end
+
+  defp mixin_view_create_trigger_sql(view) do
+    """
+    create trigger #{quote_ident(view <> "_mixin_view_trigger")}
+    instead of insert or update or delete on #{quote_ident(view)}
+    for each row
+    execute procedure #{quote_ident(mixin_view_function_name(view))}()
+    """
+  end
+
+  defp mixin_view_trigger_function_sql(table, view, base_columns, mixins) do
+    # the trigger treats every mixin the same, whatever its join; it only needs the source and columns
+    mixins = for {source, cols, _opts} <- normalise_mixins(mixins), do: {source, cols}
+    qt = quote_ident(table)
+    qcols = fn cols -> Enum.map_join(cols, ", ", &quote_ident/1) end
+    vals = fn row, cols -> Enum.map_join(cols, ", ", &"#{row}.#{quote_ident(&1)}") end
+    # the id is never changed by an update
+    updatable = Enum.reject(base_columns, &(&1 == "id"))
+
+    insert_mixins =
+      for {source, cols} <- mixins do
+        all = ["id" | cols]
+        "insert into #{quote_ident(source)} (#{qcols.(all)}) values (#{vals.("NEW", all)});"
+      end
+
+    upsert_mixins =
+      for {source, cols} <- mixins do
+        all = ["id" | cols]
+        sets = Enum.map_join(cols, ", ", &"#{quote_ident(&1)} = excluded.#{quote_ident(&1)}")
+
+        "insert into #{quote_ident(source)} (#{qcols.(all)}) values (OLD.\"id\", #{vals.("NEW", cols)}) on conflict (\"id\") do update set #{sets};"
+      end
+
+    delete_mixins =
+      for {source, _cols} <- Enum.reverse(mixins) do
+        "delete from #{quote_ident(source)} where \"id\" = OLD.\"id\";"
+      end
+
+    update_base =
+      if updatable == [] do
+        []
+      else
+        sets = Enum.map_join(updatable, ", ", &"#{quote_ident(&1)} = NEW.#{quote_ident(&1)}")
+        ["update #{qt} set #{sets} where \"id\" = OLD.\"id\";"]
+      end
+
+    pointer = quote_ident(Pointer.__schema__(:source))
+    tables = quote_ident(Table.__schema__(:source))
+
+    # the base table's own pointable triggers only fire at trigger depth 0, so from this `instead of` trigger they are skipped, and this function writes the pointer itself, as the virtual trigger does
+    # the pointer and base row go first on insert (mixins reference them) and last on delete
+    """
+    create or replace function #{quote_ident(mixin_view_function_name(view))}() returns trigger as $$
+    declare table_id uuid;
+    begin
+      if (TG_OP = 'INSERT') then
+        select id into table_id from #{tables} where "table" = #{quote_literal(table)};
+        if table_id is null then
+          raise exception 'Table % is not pointable', #{quote_literal(table)};
+        end if;
+        insert into #{pointer} (id, table_id) values (NEW."id", table_id) on conflict do nothing;
+        insert into #{qt} (#{qcols.(base_columns)}) values (#{vals.("NEW", base_columns)});
+        #{Enum.join(insert_mixins, "\n    ")}
+        return NEW;
+      elsif (TG_OP = 'UPDATE') then
+        #{Enum.join(update_base ++ upsert_mixins, "\n    ")}
+        return NEW;
+      elsif (TG_OP = 'DELETE') then
+        #{Enum.join(delete_mixins, "\n    ")}
+        delete from #{qt} where "id" = OLD."id";
+        update #{pointer} set deleted_at = now() at time zone 'utc' where id = OLD."id";
+        return OLD;
+      end if;
+      return null;
+    end;
+    $$ language plpgsql
+    """
+  end
+
+  defp mixin_view_function_name(view), do: view <> "_mixin_trigger"
+
+  # `{source, cols}` or `{source, cols, opts}`, as `{source, cols, opts}`; anything else raises, rather than being skipped by a `for` pattern
+  defp normalise_mixins(mixins) do
+    Enum.map(mixins, fn
+      {source, cols, opts} when is_list(cols) and is_list(opts) -> {source, cols, opts}
+      {source, cols} when is_list(cols) -> {source, cols, []}
+    end)
+  end
+
+  defp mixin_alias(i), do: "m#{i}"
+
+  # double any embedded quote so a name cannot end the identifier early
+  defp quote_ident(name), do: ~s["#{String.replace(to_string(name), ~s["], ~s[""])}"]
+
+  defp quote_literal(value), do: "'#{String.replace(to_string(value), "'", "''")}'"
 
   @doc false
   def insert_table_record(schema) do
