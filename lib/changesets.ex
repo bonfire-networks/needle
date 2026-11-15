@@ -472,8 +472,12 @@ defmodule Needle.Changesets do
     Enum.reduce(mixin_names, attrs, &do_mixin_attrs(&1, &2, id))
   end
 
+  # only for a mixin that is being given: an absent one stays absent, since a `nil` put in its place reads as removing the existing row, and the row then written has no id
   defp do_mixin_attrs(mixin_name, attrs, id) when is_atom(mixin_name) do
-    Map.update(attrs, mixin_name, nil, &Map.put(&1, :id, id))
+    case attrs do
+      %{^mixin_name => %{} = value} -> Map.put(attrs, mixin_name, Map.put(value, :id, id))
+      _ -> attrs
+    end
   end
 
   def get_field(%Changeset{} = cs, key), do: Changeset.get_field(cs, key)
